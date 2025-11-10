@@ -1,5 +1,6 @@
 package vn.manh.findJob.service;
 
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -16,14 +17,13 @@ import vn.manh.findJob.exception.ResourceNotFoundException;
 import vn.manh.findJob.mapper.UserMapper;
 import vn.manh.findJob.repository.CompanyRepository;
 import vn.manh.findJob.repository.UserRepository;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+@RequiredArgsConstructor
 @Service
 @Slf4j
-@RequiredArgsConstructor
 public class UserService{
     private final UserRepository userRepository;
     private final UserMapper userMapper;

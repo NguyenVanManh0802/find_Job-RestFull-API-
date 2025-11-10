@@ -48,7 +48,7 @@ public class SecurityConfiguration {
                 // 4. Phân quyền cho các HTTP Request
                 .authorizeHttpRequests(auth -> auth
                         // Cho phép tất cả mọi người truy cập các API liên quan đến xác thực
-                        .requestMatchers("/api/v1/users/**", "/api/v1/auth/register").permitAll()
+                        .requestMatchers("/api/v1/users/**","/api/v1/jobs/**", "/api/v1/companies/**").permitAll()
 
                         // (Ví dụ) Cho phép các API public khác nếu có (ví dụ: xem file)
                         .requestMatchers("/storage/**").permitAll()
