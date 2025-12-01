@@ -1,62 +1,122 @@
 package vn.manh.findJob.config;
 
+
+import com.nimbusds.jose.jwk.source.ImmutableSecret;
+import com.nimbusds.jose.util.Base64;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtEncoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
+import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 
-@Configuration
-@EnableMethodSecurity // Bật tính năng bảo mật ở cấp độ phương thức (ví dụ: @PreAuthorize)
-public class SecurityConfiguration {
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 
-    /**
-     * Định nghĩa Bean PasswordEncoder.
-     * Spring sẽ quản lý Bean này và bạn có thể tiêm (inject) nó vào bất cứ đâu
-     * (ví dụ: trong UserService) để mã hóa mật khẩu.
-     */
+
+import static vn.manh.findJob.service.SecurityUtil.JWT_ALGORITHM;
+
+@Configuration
+@EnableMethodSecurity(securedEnabled = true)
+public class SecurityConfiguration {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    /**
-     * Cấu hình chuỗi bộ lọc bảo mật (Security Filter Chain).
-     * Đây là nơi bạn định nghĩa các quy tắc bảo mật chính.
-     */
+
+
+
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http, AuthenticationEntryPoint customAuthenticationEntryPoint) throws Exception {
+        String[] whiteList={"/","/api/v1/auth/login","/api/v1/auth/refresh",
+                "/api/v1/companies/**","/api/v1/jobs/**",
+                "/storage/**","/api/v1/auth/register"
+
+        };
         http
-                // 1. Vô hiệu hóa CSRF (Cross-Site Request Forgery)
-                // Vì chúng ta đang xây dựng API stateless (phi trạng thái) dùng token,
-                // nên không cần cơ chế bảo vệ CSRF dựa trên session.
-                .csrf(AbstractHttpConfigurer::disable)
+                .csrf(csrf -> csrf.disable())
+                .cors(Customizer.withDefaults())
+                .authorizeHttpRequests(
 
-                // 2. Vô hiệu hóa Form Login
-                // Chúng ta không dùng trang đăng nhập do Spring tự tạo, mà sẽ tự xây dựng API /login
-                .formLogin(AbstractHttpConfigurer::disable)
+                        authz -> authz
+                                .requestMatchers(whiteList).permitAll()
+                                .requestMatchers(HttpMethod.GET,"/api/v1/companies").permitAll()
+                                .requestMatchers(HttpMethod.GET,"/api/v1/jobs").permitAll()
+                                .requestMatchers(HttpMethod.GET,"/api/v1/skills").permitAll()
+                                // THÊM DÒNG NÀY: Cho phép logout mà không cần token hợp lệ
+                                .requestMatchers("/api/v1/auth/logout").permitAll()
+                                .anyRequest().authenticated()
+                )
+                .oauth2ResourceServer((oauth2) -> oauth2.jwt(Customizer.withDefaults())
+                        .authenticationEntryPoint(customAuthenticationEntryPoint))
+                //default exception
+//                .exceptionHandling(
+//                        exceptions -> exceptions
+//                                .authenticationEntryPoint(new BearerTokenAuthenticationEntryPoint()) //401
+//                                .accessDeniedHandler(new BearerTokenAccessDeniedHandler())) //403
 
-                // 3. Cấu hình Session
-                // API của chúng ta sẽ là STATELESS (phi trạng thái),
-                // server không lưu trữ bất kỳ thông tin session nào của người dùng.
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-
-                // 4. Phân quyền cho các HTTP Request
-                .authorizeHttpRequests(auth -> auth
-                        // Cho phép tất cả mọi người truy cập các API liên quan đến xác thực
-                        .requestMatchers("/api/v1/users/**","/api/v1/jobs/**", "/api/v1/companies/**").permitAll()
-
-                        // (Ví dụ) Cho phép các API public khác nếu có (ví dụ: xem file)
-                        .requestMatchers("/storage/**").permitAll()
-
-                        // Đối với TẤT CẢ các request còn lại:
-                        .anyRequest().authenticated() // Bắt buộc phải được xác thực (đăng nhập)
-                );
-
+                .formLogin(f->f.disable())
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
         return http.build();
     }
+
+
+    //lấy tham số lưu bên config trong file application
+    @Value("${hoidanit.jwt.base64-secret}")
+    private String jwtKey;
+    @Value("${hoidanit.jwt.access-token-validity-in-seconds}")
+    private String accessTokenExpiration;
+
+    private SecretKey getSecretKey() {
+        byte[] keyBytes = Base64.from(jwtKey).decode();
+        return new SecretKeySpec(keyBytes, 0, keyBytes.length, JWT_ALGORITHM.getName());
+    }
+
+    //khi decode thành công
+    @Bean
+    public JwtAuthenticationConverter jwtAuthenticationConverter() {
+        JwtGrantedAuthoritiesConverter grantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();
+        grantedAuthoritiesConverter.setAuthorityPrefix("");
+        grantedAuthoritiesConverter.setAuthoritiesClaimName("permission");
+
+        JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
+        jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(grantedAuthoritiesConverter);
+        return jwtAuthenticationConverter;
+    }
+
+
+    @Bean
+    public JwtEncoder jwtEncoder() {
+        return new NimbusJwtEncoder(new ImmutableSecret<>(getSecretKey()));
+    }
+
+
+    //@FunctionalInterface
+    @Bean
+    public JwtDecoder jwtDecoder() {
+        NimbusJwtDecoder jwtDecoder = NimbusJwtDecoder.withSecretKey(
+                getSecretKey()).macAlgorithm(JWT_ALGORITHM).build();
+        return token -> {
+            try {
+                return jwtDecoder.decode(token);
+            } catch (Exception e) {
+                System.out.println(">>> JWT error: " + e.getMessage());
+                throw e;
+            }
+        };
+    }
+
 }

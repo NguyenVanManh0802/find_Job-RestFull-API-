@@ -22,6 +22,7 @@ public class JobDTO {
     private String location;
     private double salary;
     private int quantity;
+    private String level;
     private String description;
     private Instant startDate;
     private Instant endDate;

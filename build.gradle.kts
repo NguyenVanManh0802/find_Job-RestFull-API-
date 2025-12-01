@@ -51,6 +51,13 @@ dependencies {
 	annotationProcessor("org.projectlombok:lombok-mapstruct-binding:0.2.0")
 	developmentOnly("org.springframework.boot:spring-boot-devtools")
 	runtimeOnly("com.mysql:mysql-connector-j")
+
+
+
+
+	//4. dependency redis
+	implementation("org.springframework.boot:spring-boot-starter-data-redis")
+
 }
 
 tasks.withType<Test> {
