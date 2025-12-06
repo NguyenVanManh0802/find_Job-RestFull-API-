@@ -1,0 +1,146 @@
+// src/styles/layout.admin.module.scss
+
+// Biến màu sắc
+$primary-color: #1890ff;
+$sidebar-bg: #001529;
+$header-bg: #ffffff;
+$content-bg: #f0f2f5;
+$text-white: #ffffff;
+$box-shadow: 0 1px 4px rgba(0, 21, 41, 0.08);
+
+.layout-container {
+    min-height: 100vh;
+
+    // --- SIDEBAR ---
+    .admin-sider {
+        box-shadow: 2px 0 8px 0 rgba(29, 35, 41, 0.05);
+        z-index: 10;
+        
+        .logo-wrapper {
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: darken($sidebar-bg, 2%);
+            transition: all 0.3s;
+            
+            .logo-text {
+                color: $text-white;
+                font-size: 18px;
+                font-weight: 700;
+                margin-left: 10px;
+                white-space: nowrap;
+                opacity: 1;
+                transition: opacity 0.3s;
+                
+                span { color: $primary-color; }
+            }
+
+            &.collapsed .logo-text {
+                opacity: 0;
+                width: 0;
+                display: none;
+            }
+        }
+
+        // Tùy chỉnh Menu Antd
+        :global {
+            .ant-menu-dark {
+                background: $sidebar-bg;
+                
+                .ant-menu-item {
+                    margin: 4px 8px;
+                    width: auto;
+                    border-radius: 6px;
+                    transition: all 0.3s;
+
+                    &:hover {
+                        background-color: $primary-color !important;
+                        transform: translateX(5px);
+                    }
+
+                    &.ant-menu-item-selected {
+                        background-color: $primary-color;
+                        box-shadow: 0 4px 10px rgba(24, 144, 255, 0.3);
+                    }
+                }
+            }
+        }
+    }
+
+    // --- HEADER ---
+    .admin-header {
+        background: $header-bg;
+        padding: 0 24px;
+        box-shadow: $box-shadow;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        position: sticky;
+        top: 0;
+        z-index: 9;
+        height: 64px;
+
+        .trigger-btn {
+            font-size: 18px;
+            cursor: pointer;
+            transition: color 0.3s;
+            padding: 0 12px;
+            border-radius: 4px;
+
+            &:hover {
+                background-color: rgba(0,0,0,0.025);
+                color: $primary-color;
+            }
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+
+            .user-dropdown {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                cursor: pointer;
+                padding: 4px 12px;
+                border-radius: 20px;
+                transition: background 0.3s;
+
+                &:hover {
+                    background-color: rgba(0,0,0,0.025);
+                }
+
+                .username {
+                    font-weight: 500;
+                    color: #333;
+                }
+            }
+        }
+    }
+
+    // --- CONTENT ---
+    .admin-content {
+        margin: 24px 16px;
+        padding: 24px;
+        background: #fff;
+        border-radius: 10px; // Bo góc vùng nội dung
+        min-height: 280px;
+        box-shadow: 0 0 20px rgba(0,0,0,0.03); // Bóng nhẹ
+        
+        // Animation xuất hiện
+        animation: fadeInUp 0.5s ease-out;
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

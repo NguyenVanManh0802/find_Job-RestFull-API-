@@ -1,0 +1,229 @@
+// src/styles/client.ai.module.scss
+
+.ai-page-container {
+    background-color: #f5f7fa;
+    min-height: 100vh;
+    padding-bottom: 60px;
+    font-family: 'Roboto', sans-serif;
+}
+
+// --- HERO SECTION ---
+.hero-section {
+    background: linear-gradient(135deg, #1a0b2e 0%, #4a0e4e 100%); // Tím đậm AI
+    color: white;
+    padding: 60px 0 80px;
+    position: relative;
+    overflow: hidden;
+
+    // Hiệu ứng hạt background (giả lập)
+    &::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background-image: radial-gradient(rgba(255,255,255,0.1) 1px, transparent 1px);
+        background-size: 30px 30px;
+        opacity: 0.3;
+    }
+
+    .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 15px;
+        position: relative;
+        z-index: 2;
+        text-align: center;
+    }
+
+    h1 {
+        font-size: 42px;
+        font-weight: 800;
+        margin-bottom: 20px;
+        background: linear-gradient(to right, #fff, #d4b6ff);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        text-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    }
+
+    p {
+        font-size: 18px;
+        color: #e0d4fc;
+        max-width: 700px;
+        margin: 0 auto 40px;
+        line-height: 1.6;
+    }
+
+    .stats-row {
+        display: flex;
+        justify-content: center;
+        gap: 40px;
+        flex-wrap: wrap;
+
+        .stat-item {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            padding: 15px 30px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.2);
+            text-align: center;
+
+            .number {
+                display: block;
+                font-size: 28px;
+                font-weight: 700;
+                color: #ffd700; // Vàng kim
+            }
+            .label {
+                font-size: 14px;
+                color: #ccc;
+            }
+        }
+    }
+}
+
+// --- BODY CONTENT ---
+.content-container {
+    max-width: 1200px;
+    margin: -40px auto 0; // Kéo lên đè vào hero
+    padding: 0 15px;
+    position: relative;
+    z-index: 3;
+}
+
+// --- JOB CARD (AI STYLE) ---
+.ai-job-card {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border-left: 4px solid transparent;
+    cursor: pointer;
+
+    &:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 30px rgba(74, 14, 78, 0.1); // Bóng tím nhẹ
+        border-left-color: #8e2de2; // Viền tím khi hover
+    }
+
+    .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 15px;
+
+        .job-info {
+            display: flex;
+            gap: 15px;
+
+            .logo {
+                width: 80px;
+                height: 80px;
+                border: 1px solid #eee;
+                border-radius: 8px;
+                padding: 5px;
+                object-fit: contain;
+            }
+
+            .title-wrap {
+                .title {
+                    font-size: 20px;
+                    font-weight: 700;
+                    color: #333;
+                    margin-bottom: 5px;
+                    transition: color 0.2s;
+                }
+                .company {
+                    font-size: 15px;
+                    color: #666;
+                }
+            }
+        }
+
+        .tags-corner {
+            text-align: right;
+        }
+    }
+
+    .card-body {
+        display: flex;
+        gap: 20px;
+        margin-bottom: 15px;
+        padding-left: 95px; // Thụt vào bằng width logo + gap
+
+        .salary {
+            color: #28a745;
+            font-weight: 700;
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .location {
+            color: #555;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+    }
+
+    .card-footer {
+        padding-left: 95px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+
+        .skills {
+            display: flex;
+            gap: 8px;
+            
+            .skill-tag {
+                background: #f3e8ff; // Tím nhạt
+                color: #6b21a8; // Tím đậm
+                padding: 4px 12px;
+                border-radius: 20px;
+                font-size: 12px;
+                font-weight: 500;
+            }
+        }
+
+        .time {
+            font-size: 13px;
+            color: #999;
+        }
+    }
+}
+
+// --- WHY AI SECTION ---
+.why-section {
+    margin-top: 60px;
+    
+    h2 {
+        text-align: center;
+        font-size: 28px;
+        font-weight: 700;
+        margin-bottom: 40px;
+        color: #333;
+    }
+    
+    .feature-card {
+        background: white;
+        padding: 30px;
+        border-radius: 12px;
+        text-align: center;
+        height: 100%;
+        transition: transform 0.3s;
+        
+        &:hover { transform: translateY(-5px); }
+
+        .icon {
+            font-size: 40px;
+            color: #8e2de2;
+            margin-bottom: 20px;
+        }
+        
+        h3 { font-size: 18px; font-weight: 600; margin-bottom: 10px; }
+        p { color: #666; line-height: 1.6; }
+    }
+}

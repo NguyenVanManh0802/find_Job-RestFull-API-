@@ -1,0 +1,139 @@
+// src/styles/client.home.module.scss
+
+.home-container {
+    font-family: 'Roboto', sans-serif;
+    background-color: #fff;
+    padding-bottom: 60px;
+}
+
+// --- HERO SECTION ---
+.hero-section {
+    // Không cần style nhiều vì SearchClient đã lo phần này
+    // Chỉ cần đảm bảo nó full-width
+    margin-bottom: 60px;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 15px;
+}
+
+.section-header {
+    text-align: center;
+    margin-bottom: 40px;
+
+    h2 {
+        font-size: 32px;
+        font-weight: 800;
+        color: #333;
+        margin-bottom: 10px;
+        
+        span { color: #ea1e30; }
+    }
+
+    p {
+        font-size: 16px;
+        color: #666;
+    }
+}
+
+// --- CATEGORIES ---
+.categories-section {
+    margin-bottom: 80px;
+
+    .category-card {
+        background: #f9f9f9;
+        border-radius: 12px;
+        padding: 30px 20px;
+        text-align: center;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        border: 1px solid transparent;
+
+        &:hover {
+            background: white;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            transform: translateY(-5px);
+            border-color: #ea1e30;
+
+            .icon { color: #ea1e30; transform: scale(1.1); }
+        }
+
+        .icon {
+            font-size: 40px;
+            color: #555;
+            margin-bottom: 15px;
+            transition: all 0.3s;
+        }
+
+        h3 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #333;
+        }
+
+        p { font-size: 14px; color: #888; margin: 0; }
+    }
+}
+
+// --- WHY CHOOSE US ---
+.features-section {
+    background-color: #f0f2f5;
+    padding: 80px 0;
+    margin-bottom: 80px;
+    
+    .feature-item {
+        text-align: center;
+        padding: 20px;
+
+        .feature-icon {
+            width: 80px;
+            height: 80px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 32px;
+            color: #ea1e30;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        h3 { font-size: 20px; font-weight: 700; margin-bottom: 10px; }
+        p { color: #666; line-height: 1.6; }
+    }
+}
+
+// --- CTA SECTION ---
+.cta-section {
+    background: linear-gradient(135deg, #ea1e30 0%, #ff4d4f 100%);
+    border-radius: 16px;
+    padding: 60px;
+    text-align: center;
+    color: white;
+    position: relative;
+    overflow: hidden;
+
+    h2 { font-size: 36px; font-weight: 800; color: white; margin-bottom: 15px; }
+    p { font-size: 18px; opacity: 0.9; margin-bottom: 30px; }
+    
+    .cta-btn {
+        background: white;
+        color: #ea1e30;
+        border: none;
+        padding: 0 40px;
+        height: 50px;
+        font-size: 16px;
+        font-weight: 700;
+        border-radius: 50px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        
+        &:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+    }
+}
