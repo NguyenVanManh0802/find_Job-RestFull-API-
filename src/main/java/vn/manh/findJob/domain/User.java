@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.*;
+import vn.manh.findJob.service.SecurityUtil;
 import vn.manh.findJob.util.constant.GenderEnum;
 
 import java.time.Instant;
@@ -45,7 +46,7 @@ public class User {
     private Company company;
 
 
-    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "user", fetch = FetchType.EAGER)
     @JsonIgnore
     List<Resume> resumes;
 
@@ -55,16 +56,16 @@ public class User {
     @JoinColumn(name = "role_id")
     private Role role;
 
-//    @PrePersist
-//    public void handleBeforeSave() {
-//        this.createdAt = Instant.now();
-//        this.createdBy = SecurityUtil.getCurrentUserLogin().isPresent() == true ?
-//                SecurityUtil.getCurrentUserLogin().get() : "";
-//    }
-//
-//    @PreUpdate
-//    public void UpdateBeforeSave() {
-//        this.updatedBy = SecurityUtil.getCurrentUserLogin().orElse("");
-//        this.updatedAt = Instant.now();
-//    }
+    @PrePersist
+    public void handleBeforeSave() {
+        this.createdAt = Instant.now();
+        this.createdBy = SecurityUtil.getCurrentUserLogin().isPresent() == true ?
+                SecurityUtil.getCurrentUserLogin().get() : "";
+    }
+
+    @PreUpdate
+    public void UpdateBeforeSave() {
+        this.updatedBy = SecurityUtil.getCurrentUserLogin().orElse("");
+        this.updatedAt = Instant.now();
+    }
 }

@@ -3,6 +3,8 @@ package vn.manh.findJob.domain;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
+import vn.manh.findJob.service.SecurityUtil;
+
 import java.time.Instant;
 import java.util.List;
 
@@ -13,6 +15,7 @@ import java.util.List;
 @AllArgsConstructor //tạo constructor với đầy đủ tham so
 @Entity
 @Table(name="permissions")
+@ToString(exclude = "roles")  //loại bỏ roles khỏi tostring
 public class Permission {
 
     @jakarta.persistence.Id
@@ -38,26 +41,26 @@ public class Permission {
 
     @ManyToMany(fetch = FetchType.LAZY, mappedBy = "permissions")
     @JsonIgnore
-    private List<Role> roles    ;
+    private List<Role> roles;
 
 
 
 
 
 
-//    @PrePersist
-//    public void handleBeforeSave()
-//    {
-//        this.createdAt=Instant.now();
-//        this.createdBy= SecurityUtil.getCurrentUserLogin().isPresent()==true ?
-//                SecurityUtil.getCurrentUserLogin().get() : "" ;
-//    }
-//
-//    //chạy pương thức này trước khi cập nhật 1 entity (chỉ chạy khi data thay đổi để cập nhật)
-//    @PreUpdate
-//    public void UpdateBeforeSave()
-//    {
-//        this.updatedBy=SecurityUtil.getCurrentUserLogin().orElse("");
-//        this.updatedAt=Instant.now();
-//    }
+    @PrePersist
+    public void handleBeforeSave()
+    {
+        this.createdAt=Instant.now();
+        this.createdBy= SecurityUtil.getCurrentUserLogin().isPresent()==true ?
+                SecurityUtil.getCurrentUserLogin().get() : "" ;
+    }
+
+    //chạy pương thức này trước khi cập nhật 1 entity (chỉ chạy khi data thay đổi để cập nhật)
+    @PreUpdate
+    public void UpdateBeforeSave()
+    {
+        this.updatedBy=SecurityUtil.getCurrentUserLogin().orElse("");
+        this.updatedAt=Instant.now();
+    }
 }

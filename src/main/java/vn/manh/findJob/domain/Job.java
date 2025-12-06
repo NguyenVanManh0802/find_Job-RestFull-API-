@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import lombok.*;
+import vn.manh.findJob.service.SecurityUtil;
 import vn.manh.findJob.util.constant.LevelEnum;
 
 import java.time.Instant;
@@ -59,20 +60,19 @@ public class Job {
     List<Resume> resumes;
 
 
-    //chạy phuương này trươ khi lưu mơi một entity
-//    @PrePersist
-//    public void handleBeforeSave()
-//    {
-//        this.createdAt=Instant.now();
-//        this.createdBy= SecurityUtil.getCurrentUserLogin().isPresent()==true ?
-//                SecurityUtil.getCurrentUserLogin().get() : "" ;
-//    }
-//
-//    //chạy pương thức này trước khi cập nhật 1 entity (chỉ chạy khi data thay đổi để cập nhật)
-//    @PreUpdate
-//    public void UpdateBeforeSave()
-//    {
-//        this.updatedBy=SecurityUtil.getCurrentUserLogin().orElse("");
-//        this.updatedAt=Instant.now();
-//    }
+    @PrePersist
+    public void handleBeforeSave()
+    {
+        this.createdAt=Instant.now();
+        this.createdBy= SecurityUtil.getCurrentUserLogin().isPresent()==true ?
+                SecurityUtil.getCurrentUserLogin().get() : "" ;
+    }
+
+    //chạy pương thức này trước khi cập nhật 1 entity (chỉ chạy khi data thay đổi để cập nhật)
+    @PreUpdate
+    public void UpdateBeforeSave()
+    {
+        this.updatedBy= SecurityUtil.getCurrentUserLogin().orElse("");
+        this.updatedAt=Instant.now();
+    }
 }

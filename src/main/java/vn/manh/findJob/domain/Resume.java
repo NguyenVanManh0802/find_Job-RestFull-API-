@@ -2,6 +2,7 @@ package vn.manh.findJob.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
+import vn.manh.findJob.service.SecurityUtil;
 import vn.manh.findJob.util.constant.ResumeStateEnum;
 
 
@@ -43,19 +44,19 @@ public class Resume {
 
 
 
-//    @PrePersist
-//    public void handleBeforeSave()
-//    {
-//        this.createdAt=Instant.now();
-//        this.createdBy= SecurityUtil.getCurrentUserLogin().isPresent()==true ?
-//                SecurityUtil.getCurrentUserLogin().get() : "" ;
-//    }
-//
-//    //chạy pương thức này trước khi cập nhật 1 entity (chỉ chạy khi data thay đổi để cập nhật)
-//    @PreUpdate
-//    public void UpdateBeforeSave()
-//    {
-//        this.updatedBy=SecurityUtil.getCurrentUserLogin().orElse("");
-//        this.updatedAt=Instant.now();
-//    }
+    @PrePersist
+    public void handleBeforeSave()
+    {
+        this.createdAt=Instant.now();
+        this.createdBy= SecurityUtil.getCurrentUserLogin().isPresent()==true ?
+                SecurityUtil.getCurrentUserLogin().get() : "" ;
+    }
+
+    //chạy pương thức này trước khi cập nhật 1 entity (chỉ chạy khi data thay đổi để cập nhật)
+    @PreUpdate
+    public void UpdateBeforeSave()
+    {
+        this.updatedBy=SecurityUtil.getCurrentUserLogin().orElse("");
+        this.updatedAt=Instant.now();
+    }
 }

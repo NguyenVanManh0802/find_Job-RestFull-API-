@@ -120,25 +120,25 @@ public class ResumeService {
     }
 
     //get all resume by user email login
-    public ResultPaginationDTO fetchResumeByUser(Pageable pageable)
-    {
-        //query builder
-        //lấy email từ decode token
-        String email=SecurityUtil.getCurrentUserLogin().isPresent() ==true?SecurityUtil.getCurrentUserLogin().get() : "";
-        FilterNode node = filterParser.parse("email='"+email+"'");
-        FilterSpecification<Resume> spec= filterSpecificationConverter.convert(node);
-        Page<Resume> resumePage=this.resumeRepository.findAll(spec,pageable);
-        ResultPaginationDTO rs =new ResultPaginationDTO();
-        ResultPaginationDTO.Meta meta=new ResultPaginationDTO.Meta();
-        meta.setPage(pageable.getPageNumber());
+    public ResultPaginationDTO fetchResumeByUser(Pageable pageable) {
+        String email = SecurityUtil.getCurrentUserLogin().isPresent() ? SecurityUtil.getCurrentUserLogin().get() : "";
+        FilterNode node = filterParser.parse("email='" + email + "'");
+        FilterSpecification<Resume> spec = filterSpecificationConverter.convert(node);
+
+        Page<Resume> resumePage = this.resumeRepository.findAll(spec, pageable);
+
+        ResultPaginationDTO rs = new ResultPaginationDTO();
+        ResultPaginationDTO.Meta meta = new ResultPaginationDTO.Meta();
+        meta.setPage(pageable.getPageNumber() + 1); // Fix page index
         meta.setPageSize(pageable.getPageSize());
         meta.setPages(resumePage.getTotalPages());
         meta.setTotal(resumePage.getTotalElements());
         rs.setMeta(meta);
-        rs.setResult(resumePage.getContent());
+        // Nên map sang DTO để bảo mật và đẹp hơn
+        List<ResResumeDTO> resumeDTOList = resumePage.getContent().stream()
+                .map(resumeMapper::toResumeDTO)
+                .collect(Collectors.toList());
+        rs.setResult(resumeDTOList);
         return rs;
-
     }
-
-
 }

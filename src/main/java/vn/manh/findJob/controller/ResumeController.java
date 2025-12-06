@@ -141,14 +141,11 @@ public class ResumeController {
 
     //get resume by user
     @PostMapping("/by-users")
-    public ResponseEntity<ResponseData<ResultPaginationDTO>> fetchResumeByUser(Pageable pageable)
-    {
-
-        ResponseData<ResultPaginationDTO>responseData=new ResponseData<>(
+    public ResponseEntity<ResponseData<ResultPaginationDTO>> fetchResumeByUser(Pageable pageable) {
+        ResponseData<ResultPaginationDTO> responseData = new ResponseData<>(
                 HttpStatus.OK.value(),
                 "get resume by user",
-                resumeService.fetchResumeByUser(pageable)
-        );
+                resumeService.fetchResumeByUser(pageable));
         return ResponseEntity.ok(responseData);
     }
 }
