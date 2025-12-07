@@ -50,21 +50,44 @@ public class ResumeService {
     }
 
     //tạo resume
-    public ResResumeDTO saveResume(Resume resume)
-    {
-        if (resume.getUser() == null || resume.getUser().getId() <= 0) {
-            throw new IllegalArgumentException("User information is missing or invalid in the resume.");
+    public ResResumeDTO saveResume(Resume resume) {
+        // 1. Lấy thông tin người đang đăng nhập
+        String email = SecurityUtil.getCurrentUserLogin().orElse("");
+        User currentUser = userService.handleGetUserByUserName(email);
+
+        // 2. KIỂM TRA QUYỀN
+        if (currentUser != null) {
+            // Kiểm tra null cho Role trước khi lấy tên
+            if (currentUser.getRole() != null) {
+                String roleName = currentUser.getRole().getName();
+
+                // Chặn Admin và HR
+                if ("SUPER_ADMIN".equals(roleName) || "HUMAN_RESOURCE".equals(roleName)) {
+                    throw new IllegalArgumentException("Tài khoản này không được phép nộp hồ sơ.");
+                }
+            }
+
+            // Chặn thêm nếu User thuộc về một Company (trường hợp HR chưa có Role chuẩn nhưng có Company)
+            if (currentUser.getCompany() != null) {
+                throw new IllegalArgumentException("Nhà tuyển dụng không được phép nộp hồ sơ.");
+            }
         }
+
+        // 3. Logic cũ giữ nguyên
         if (resume.getJob() == null || resume.getJob().getId() <= 0) {
-            throw new IllegalArgumentException("Job information is missing or invalid in the resume.");
+            throw new IllegalArgumentException("Job information is missing or invalid.");
         }
-        User user=userService.findUserById(resume.getUser().getId());
-        Job job=jobService.findJobById(resume.getJob().getId());
-        resume.setUser(user);
+
+        // Gán user thực tế đang đăng nhập vào Resume (để tránh việc gửi ID user khác)
+        resume.setUser(currentUser);
+
+        Job job = jobService.findJobById(resume.getJob().getId());
         resume.setJob(job);
-        Resume resume1=resumeRepository.save(resume);
-        ResResumeDTO resResumeDTO=resumeMapper.toResumeDTO(resume1);
-        resResumeDTO.setCompanyName(resume.getJob().getCompany().getName());
+
+        Resume savedResume = resumeRepository.save(resume);
+        ResResumeDTO resResumeDTO = resumeMapper.toResumeDTO(savedResume);
+        resResumeDTO.setCompanyName(job.getCompany().getName());
+
         return resResumeDTO;
     }
 

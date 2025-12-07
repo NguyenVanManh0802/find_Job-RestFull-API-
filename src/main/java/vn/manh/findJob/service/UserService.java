@@ -76,25 +76,34 @@ public class UserService{
 
         //kiểm tra email đã có tồn tại trong database hay không
         if (this.userRepository.existsByEmail(request.getEmail())) {
-            throw new ResourceAlreadyExistsException("Email " + request.getEmail() + " đã tồn tại.");
+            if(!existingUser.getEmail().equals(request.getEmail()) && existingUser.getEmail()!=request.getEmail() )
+            {
+                throw new ResourceAlreadyExistsException("Email " + request.getEmail() + " đã tồn tại.");
+            }
         }
-
         // 2. Cập nhật các trường cần thiết
         log.info("Updating user with id: {}", userId);
         existingUser.setName(request.getName());
         existingUser.setGender(request.getGender());
         existingUser.setAge(request.getAge());
         existingUser.setAddress(request.getAddress());
-        existingUser.setEmail(request.getEmail());
+        if(request.getEmail()!=null)
+        {
+            existingUser.setEmail(request.getEmail());
+        }
+
         // Lưu ý: Không cập nhật password ở đây trừ khi có logic riêng về đổi mật khẩu
 
         //check company
         if(request.getCompany()!=null)
         {
             Optional<Company> companyOptional= companyRepository.findById(request.getCompany().getId());
-            existingUser.setCompany(companyOptional.isPresent() ? companyOptional.get():null);
+            existingUser.setCompany(companyOptional.orElse(null));
         }
-
+        else {
+            // Nếu request không gửi company (hoặc gửi null), thì set null cho user
+            existingUser.setCompany(null);
+        }
         //check role
         if(request.getRole()!=null)
         {

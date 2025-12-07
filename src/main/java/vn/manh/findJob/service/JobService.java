@@ -1,5 +1,8 @@
 package vn.manh.findJob.service;
 
+import com.turkraft.springfilter.boot.Filter;
+import com.turkraft.springfilter.builder.FilterBuilder;
+import com.turkraft.springfilter.converter.FilterSpecificationConverter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
@@ -8,12 +11,16 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional; // Import Transactional
 import vn.manh.findJob.domain.Company;
 import vn.manh.findJob.domain.Job;
 import vn.manh.findJob.domain.Skill;
+import vn.manh.findJob.domain.User;
 import vn.manh.findJob.dto.JobDTO;
+import vn.manh.findJob.dto.ResponseData;
 import vn.manh.findJob.dto.ResultPaginationDTO;
 import vn.manh.findJob.exception.ResourceNotFoundException;
 import vn.manh.findJob.mapper.JobMapper;
@@ -74,9 +81,13 @@ public class JobService {
     @Transactional(readOnly = true)
     public ResultPaginationDTO getAllJob(Specification<Job> specification, Pageable pageable) {
         Page<Job> pageJob = jobRepository.findAll(specification, pageable);
+
         ResultPaginationDTO rs = new ResultPaginationDTO();
         ResultPaginationDTO.Meta meta = new ResultPaginationDTO.Meta();
-        meta.setPage(pageable.getPageNumber());
+
+        // FIX: +1 vào page index
+        meta.setPage(pageable.getPageNumber() + 1);
+
         meta.setPageSize(pageable.getPageSize());
         meta.setPages(pageJob.getTotalPages());
         meta.setTotal(pageJob.getTotalElements());

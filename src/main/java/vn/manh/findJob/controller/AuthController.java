@@ -47,7 +47,6 @@ public class AuthController {
         //xác thực người dùng => cần viết hàm loadUserByUsername
         Authentication authentication = authenticationManagerBuilder.getObject().authenticate(authenticationToken);
         //nếu authentication xác thực thành công thì nó không lưu mật khẩu mà chỉ lưu thông tin người dùng
-
         //create token
         //set thoong tin user co the dung sau nay
         SecurityContextHolder.getContext().setAuthentication(authentication);

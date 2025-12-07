@@ -1,6 +1,5 @@
 package vn.manh.findJob.controller;
 
-
 import com.turkraft.springfilter.boot.Filter;
 import com.turkraft.springfilter.builder.FilterBuilder;
 import com.turkraft.springfilter.converter.FilterSpecificationConverter;
@@ -23,8 +22,8 @@ import vn.manh.findJob.service.ResumeService;
 import vn.manh.findJob.service.SecurityUtil;
 import vn.manh.findJob.service.UserService;
 
-
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -37,12 +36,12 @@ public class ResumeController {
     private final UserService userService;
     private final FilterSpecificationConverter filterSpecificationConverter;
     private final FilterBuilder filterBuilder;
-    //create Resume
+
+    // create Resume
     @PostMapping("")
-    public ResponseEntity<ResponseData<ResResumeDTO>> creatResume(@RequestBody Resume resume)
-    {
+    public ResponseEntity<ResponseData<ResResumeDTO>> creatResume(@RequestBody Resume resume) {
         log.info("Request add Resume");
-        ResResumeDTO resResumeDTO=resumeService.saveResume(resume);
+        ResResumeDTO resResumeDTO = resumeService.saveResume(resume);
         URI location = ServletUriComponentsBuilder
                 .fromCurrentRequest()
                 .path("/{id}")
@@ -55,38 +54,35 @@ public class ResumeController {
         return ResponseEntity.created(location).body(responseData);
     }
 
-    //update resume by id
+    // update resume by id
     @PutMapping("/{id}")
-    public ResponseEntity<ResponseData<ResResumeDTO>> updateResumeByid(@RequestBody Resume resume,@PathVariable long id)
-    {
-        ResponseData<ResResumeDTO>responseData=new ResponseData<>(
+    public ResponseEntity<ResponseData<ResResumeDTO>> updateResumeByid(@RequestBody Resume resume, @PathVariable long id) {
+        ResponseData<ResResumeDTO> responseData = new ResponseData<>(
                 HttpStatus.OK.value(),
                 "update resume by Id successful",
-                resumeService.updateResume(resume,id)
+                resumeService.updateResume(resume, id)
         );
         return ResponseEntity.ok(responseData);
     }
 
-    //delete
+    // delete
     @DeleteMapping("/{id}")
-    public ResponseEntity<ResponseData<Void>> deleteResumeById( @PathVariable  long id)
-    {
-        log.info("delete job by id ={}",id);
+    public ResponseEntity<ResponseData<Void>> deleteResumeById(@PathVariable long id) {
+        log.info("delete job by id ={}", id);
         resumeService.deleteResume(id);
-        ResponseData<Void> responseData= new ResponseData<>(
+        ResponseData<Void> responseData = new ResponseData<>(
                 HttpStatus.OK.value(),
                 "delete resume successful"
         );
         return ResponseEntity.ok(responseData);
     }
 
-    //get resume by id
+    // get resume by id
     @GetMapping("/{id}")
-    public ResponseEntity<ResponseData<ResResumeDTO>> getResumeById(@PathVariable long id)
-    {
-        log.info("get resume with id = {}",id);
+    public ResponseEntity<ResponseData<ResResumeDTO>> getResumeById(@PathVariable long id) {
+        log.info("get resume with id = {}", id);
         ResResumeDTO resResumeDTO = resumeService.getResumeById(id);
-        ResponseData<ResResumeDTO>responseData=new ResponseData<>(
+        ResponseData<ResResumeDTO> responseData = new ResponseData<>(
                 HttpStatus.OK.value(),
                 "get resume by Id successful",
                 resResumeDTO
@@ -94,52 +90,80 @@ public class ResumeController {
         return ResponseEntity.ok(responseData);
     }
 
-    //get all
+    // get all (ĐÃ CẬP NHẬT LOGIC LỌC THEO CÔNG TY)
     @GetMapping()
-    public ResponseEntity<ResponseData<ResultPaginationDTO>> getAllResume(@Filter Specification<Resume> specification, Pageable pageable)
-    {
-        List<Long> arrJobs=null;
-        String email= SecurityUtil.getCurrentUserLogin().isPresent()==true ?SecurityUtil.getCurrentUserLogin().get() : "";
-        User curentUser=this.userService.handleGetUserByUserName(email);
+    public ResponseEntity<ResponseData<ResultPaginationDTO>> getAllResume(
+            @Filter Specification<Resume> specification,
+            Pageable pageable) {
 
-        if(curentUser!=null)
-        {
-            Company userCompany=curentUser.getCompany();
-            if(userCompany!=null)
-            {
-                List<Job> companyJobs=userCompany.getJobs();
-                if(companyJobs!=null && companyJobs.size()>0)
-                {
-                    arrJobs=companyJobs.stream().map(x->x.getId())
+        List<Long> arrJobIds = null;
+        String email = SecurityUtil.getCurrentUserLogin().isPresent()
+                ? SecurityUtil.getCurrentUserLogin().get() : "";
+        User currentUser = this.userService.handleGetUserByUserName(email);
+
+        if (currentUser != null) {
+            Company userCompany = currentUser.getCompany();
+
+            // Nếu user thuộc về một công ty (HR)
+            if (userCompany != null) {
+                List<Job> companyJobs = userCompany.getJobs();
+
+                if (companyJobs != null && !companyJobs.isEmpty()) {
+                    arrJobIds = companyJobs.stream()
+                            .map(Job::getId)
                             .collect(Collectors.toList());
+                } else {
+                    // Company chưa có Job nào -> Chắc chắn không có Resume -> Trả về rỗng ngay
+                    ResultPaginationDTO emptyResult = new ResultPaginationDTO();
+                    ResultPaginationDTO.Meta meta = new ResultPaginationDTO.Meta();
+                    meta.setPage(pageable.getPageNumber() + 1);
+                    meta.setPageSize(pageable.getPageSize());
+                    meta.setPages(0);
+                    meta.setTotal(0);
+                    emptyResult.setMeta(meta);
+                    emptyResult.setResult(new ArrayList<>());
+
+                    ResponseData<ResultPaginationDTO> responseData = new ResponseData<>(
+                            HttpStatus.OK.value(),
+                            "FETCH RESUME SUCCESSFUL (Empty)",
+                            emptyResult
+                    );
+                    return ResponseEntity.ok(responseData);
                 }
+
+                // Tạo Filter: Chỉ lấy Resume thuộc Job của công ty này
+                Specification<Resume> jobInSpec = filterSpecificationConverter.convert(
+                        filterBuilder.field("job").in(filterBuilder.input(arrJobIds)).get()
+                );
+
+                // Kết hợp với filter từ FE (nếu có)
+                Specification<Resume> finalSpec = jobInSpec;
+                if (specification != null) {
+                    finalSpec = jobInSpec.and(specification);
+                }
+
+                ResultPaginationDTO resultPaginationDTO = resumeService.getAllResume(finalSpec, pageable);
+                ResponseData<ResultPaginationDTO> responseData = new ResponseData<>(
+                        HttpStatus.OK.value(),
+                        "FETCH RESUME SUCCESSFUL",
+                        resultPaginationDTO
+                );
+                return ResponseEntity.ok(responseData);
             }
-            Specification<Resume> jobInSpec=filterSpecificationConverter.convert(filterBuilder.field("job")
-                    .in(filterBuilder.input(arrJobs)).get());
-            Specification<Resume> finalSpec=jobInSpec.and(specification);
-            ResultPaginationDTO resultPaginationDTO=resumeService.getAllResume(finalSpec,pageable);
-            ResponseData<ResultPaginationDTO>responseData=new ResponseData<>(
-                    HttpStatus.OK.value(),
-                    "FETCH RESUME SUCCESSFUL",
-                    resultPaginationDTO
-            );
-            return ResponseEntity.ok(responseData);
-
-
         }
 
-        ResultPaginationDTO resultPaginationDTO=resumeService.getAllResume(specification,pageable);
+        // Nếu là Admin hoặc User không thuộc công ty (Admin xem hết)
+        ResultPaginationDTO resultPaginationDTO = resumeService.getAllResume(specification, pageable);
         ResponseData<ResultPaginationDTO> responseData = new ResponseData<>(
                 HttpStatus.OK.value(),
                 "Fetch all resumes successfully",
                 resultPaginationDTO
         );
 
-
         return ResponseEntity.status(HttpStatus.OK).body(responseData);
     }
 
-    //get resume by user
+    // get resume by user
     @PostMapping("/by-users")
     public ResponseEntity<ResponseData<ResultPaginationDTO>> fetchResumeByUser(Pageable pageable) {
         ResponseData<ResultPaginationDTO> responseData = new ResponseData<>(

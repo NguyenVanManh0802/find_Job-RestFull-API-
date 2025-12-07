@@ -11,11 +11,15 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import vn.manh.findJob.domain.Company;
 import vn.manh.findJob.domain.Job;
+import vn.manh.findJob.domain.User;
 import vn.manh.findJob.dto.JobDTO;
 import vn.manh.findJob.dto.ResponseData;
 import vn.manh.findJob.dto.ResultPaginationDTO;
 import vn.manh.findJob.service.JobService;
+import vn.manh.findJob.service.SecurityUtil;
+import vn.manh.findJob.service.UserService;
 
 import java.net.URI;
 
@@ -25,13 +29,16 @@ import java.net.URI;
 @RestController
 @RequestMapping("/api/v1/jobs")
 public class JobController {
+
     private final JobService jobService;
-    //create job
+    private final UserService userService;
+    // Không cần FilterBuilder hay Converter ở đây nếu dùng cách JPA thuần
+
+    // create job
     @PostMapping()
-    public ResponseEntity<ResponseData<JobDTO>> createJob(@Valid @RequestBody Job job)
-    {
+    public ResponseEntity<ResponseData<JobDTO>> createJob(@Valid @RequestBody Job job) {
         log.info("Request add Job");
-        JobDTO jobs1=jobService.saveJob(job);
+        JobDTO jobs1 = jobService.saveJob(job);
         URI location = ServletUriComponentsBuilder
                 .fromCurrentRequest()
                 .path("/{id}")
@@ -44,28 +51,49 @@ public class JobController {
         return ResponseEntity.created(location).body(responseData);
     }
 
-    //get all job
+    // get all job (SỬ DỤNG JPA SPECIFICATION THUẦN)
     @GetMapping()
-    public ResponseEntity<ResponseData<ResultPaginationDTO>> getAllJob(@Filter Specification<Job> specification, Pageable pageable)
-    {
-        ResultPaginationDTO resultPaginationDTO=jobService.getAllJob(specification,pageable);
-        ResponseData<ResultPaginationDTO> responseData = new ResponseData<>(
-                HttpStatus.OK.value(),
-                "Fetch all jobs successfully",
-                resultPaginationDTO
-        );
+    public ResponseEntity<ResponseData<ResultPaginationDTO>> getAllJob(
+            @Filter Specification<Job> specification,
+            Pageable pageable) {
 
+        // 1. Lấy thông tin User hiện tại
+        String email = SecurityUtil.getCurrentUserLogin().orElse("");
+        User currentUser = this.userService.handleGetUserByUserName(email);
 
-        return ResponseEntity.status(HttpStatus.OK).body(responseData);
+        if (currentUser != null) {
+            Company userCompany = currentUser.getCompany();
+
+            // 2. Nếu User thuộc 1 công ty (HR) -> Chỉ xem job của công ty đó
+            if (userCompany != null) {
+
+                // --- THAY THẾ FILTER BUILDER BẰNG JPA SPECIFICATION ---
+                Specification<Job> companySpec = (root, query, criteriaBuilder) ->
+                        criteriaBuilder.equal(root.get("company").get("id"), userCompany.getId());
+                // ------------------------------------------------------
+
+                // Kết hợp: (Thuộc công ty này) AND (Điều kiện lọc từ Frontend nếu có)
+                Specification<Job> finalSpec = companySpec;
+                if (specification != null) {
+                    finalSpec = companySpec.and(specification);
+                }
+
+                ResultPaginationDTO result = jobService.getAllJob(finalSpec, pageable);
+                return ResponseEntity.ok(new ResponseData<>(HttpStatus.OK.value(), "Fetch jobs successful", result));
+            }
+        }
+
+        // 3. Nếu là Admin hoặc User thường -> Xem tất cả
+        ResultPaginationDTO result = jobService.getAllJob(specification, pageable);
+        return ResponseEntity.ok(new ResponseData<>(HttpStatus.OK.value(), "Fetch all jobs successful", result));
     }
 
-    //get Job by id
+    // get Job by id
     @GetMapping("/{id}")
-    public ResponseEntity<ResponseData<JobDTO>>getJobDTOById(@PathVariable  long id)
-    {
-        log.info("get job with id = {}",id);
+    public ResponseEntity<ResponseData<JobDTO>> getJobDTOById(@PathVariable long id) {
+        log.info("get job with id = {}", id);
         JobDTO job = jobService.getJobById(id);
-        ResponseData<JobDTO>responseData=new ResponseData<>(
+        ResponseData<JobDTO> responseData = new ResponseData<>(
                 HttpStatus.OK.value(),
                 "get job by Id successful",
                 job
@@ -73,13 +101,11 @@ public class JobController {
         return ResponseEntity.ok(responseData);
     }
 
-    //update job by id
+    // update job by id
     @PutMapping("/{id}")
-    public ResponseEntity<ResponseData<JobDTO>> updateJobById(@PathVariable long id,@RequestBody Job job)
-    {
-        JobDTO jobDTO=new JobDTO();
-        jobDTO=jobService.updateJobById(id,job);
-        ResponseData<JobDTO>responseData=new ResponseData<>(
+    public ResponseEntity<ResponseData<JobDTO>> updateJobById(@PathVariable long id, @RequestBody Job job) {
+        JobDTO jobDTO = jobService.updateJobById(id, job);
+        ResponseData<JobDTO> responseData = new ResponseData<>(
                 HttpStatus.OK.value(),
                 "update job by Id successful",
                 jobDTO
@@ -87,13 +113,12 @@ public class JobController {
         return ResponseEntity.ok(responseData);
     }
 
-    //delete by id
+    // delete by id
     @DeleteMapping("/{id}")
-    public ResponseEntity<ResponseData<Void>> deleteJobById( @PathVariable  long id)
-    {
-        log.info("delete job by id ={}",id);
+    public ResponseEntity<ResponseData<Void>> deleteJobById(@PathVariable long id) {
+        log.info("delete job by id ={}", id);
         jobService.deleteJobById(id);
-        ResponseData<Void> responseData= new ResponseData<>(
+        ResponseData<Void> responseData = new ResponseData<>(
                 HttpStatus.OK.value(),
                 "delete job successful"
         );
