@@ -1,24 +1,38 @@
 package vn.manh.findJob.service;
 
 
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.gson.GsonFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.ResponseCookie;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import vn.manh.findJob.domain.Company;
 import vn.manh.findJob.domain.Role;
 import vn.manh.findJob.domain.User;
+import vn.manh.findJob.dto.Auth.ReqChangePasswordDTO;
+import vn.manh.findJob.dto.Auth.ReqRegisterDTO;
+import vn.manh.findJob.dto.Auth.ResLoginDTO;
 import vn.manh.findJob.dto.ResultPaginationDTO;
+import vn.manh.findJob.dto.Auth.ReqResetPasswordDTO;
 import vn.manh.findJob.dto.User.UserResponseDTO;
 import vn.manh.findJob.exception.ResourceAlreadyExistsException;
 import vn.manh.findJob.exception.ResourceNotFoundException;
 import vn.manh.findJob.mapper.UserMapper;
 import vn.manh.findJob.repository.CompanyRepository;
 import vn.manh.findJob.repository.UserRepository;
+
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
@@ -29,7 +43,9 @@ public class UserService{
     private final UserMapper userMapper;
     private final CompanyRepository companyRepository;
     private final RoleService roleService;
-
+    private final PasswordEncoder passwordEncoder;
+    private final EmailService emailService;
+    private final SecurityUtil securityUtil;
     //tìm user theo id
     public User findUserById(long id) {
         return userRepository.findById(id)
@@ -105,10 +121,10 @@ public class UserService{
             existingUser.setCompany(null);
         }
         //check role
-        if(request.getRole()!=null)
+        if(request.getRole() != null && request.getRole().getId() > 0)
         {
             Role r= this.roleService.getRoleById(request.getRole().getId());
-            request.setRole(r!=null ? r: null);
+            existingUser.setRole(r!=null ? r: null);
         }
         // 3. Lưu lại vào DB
         UserResponseDTO userResponseDTO=userMapper.toUserResponseDTO(userRepository.save(existingUser));
@@ -185,5 +201,200 @@ public class UserService{
     public User getUserByRefreshTokenAndEmail(String token,String email)
     {
         return userRepository.findByRefreshTokenAndEmail(token,email);
+    }
+
+    public UserResponseDTO handleRegister(ReqRegisterDTO req)   {
+        if (userRepository.existsByEmail(req.getEmail())) {
+            throw new ResourceAlreadyExistsException("Email " + req.getEmail() + " đã tồn tại.");
+        }
+
+        User user = new User();
+        user.setName(req.getName());
+        user.setEmail(req.getEmail());
+        user.setPassword(passwordEncoder.encode(req.getPassword()));
+        user.setAge(req.getAge());
+        user.setGender(req.getGender());
+        user.setAddress(req.getAddress());
+        Role userRole = this.roleService.handleGetRoleByName("USER");
+        // 2. Gán vào user
+        if (userRole != null) {
+            user.setRole(userRole);
+        }
+        // QUAN TRỌNG: Mặc định chưa kích hoạt
+        user.setActive(false);
+
+        // Lưu vào DB
+        User savedUser = userRepository.save(user);
+        UserResponseDTO userResponseDTO=userMapper.toUserResponseDTO(savedUser);
+
+        // Tạo JWT xác thực và gửi email
+        String token = securityUtil.createEmailVerificationToken(savedUser.getEmail());
+        emailService.sendVerificationEmail(savedUser.getName(), savedUser.getEmail(), token);
+        return userResponseDTO;
+    }
+
+    // 2. Xử lý Xác Thực (Khi user click link)
+    public void handleVerifyAccount(String token) {
+        // Giải mã token (Nếu hết hạn hoặc sai format sẽ throw lỗi tại đây)
+        Jwt decodedToken = securityUtil.checkValidToken(token);
+
+        // Lấy email từ subject của token
+        String email = decodedToken.getSubject();
+
+        // Tìm user và kích hoạt
+        User user = userRepository.findByEmail(email);
+        if (user == null) {
+            throw new ResourceNotFoundException("Tài khoản không tồn tại.");
+        }
+        if (user.isActive()) {
+            throw new ResourceNotFoundException("Tài khoản đã được kích hoạt trước đó.");
+        }
+
+        user.setActive(true);
+        userRepository.save(user);
+    }
+
+    //logic thay đổi password
+    public void handleChangePassword(ReqChangePasswordDTO request){
+        // 1. Lấy email user đang đăng nhập
+        String email = SecurityUtil.getCurrentUserLogin().isPresent()
+                ? SecurityUtil.getCurrentUserLogin().get()
+                : "";
+        System.out.println("Mật khẩu User nhập: [" + request.getCurrentPassword() + "]");
+        if (email.equals("")) {
+            throw new ResourceNotFoundException("Bạn chưa đăng nhập.");
+        }
+
+        User currentUser = this.userRepository.findByEmail(email);
+        if (currentUser == null) {
+            throw new ResourceNotFoundException("Người dùng không tồn tại.");
+        }
+
+        // 2. Kiểm tra mật khẩu cũ có đúng không
+        if (!passwordEncoder.matches(request.getCurrentPassword(), currentUser.getPassword())) {
+            throw new ResourceNotFoundException("Mật khẩu hiện tại không chính xác.");
+        }
+
+        // 3. (Tuỳ chọn) Kiểm tra xem newPassword có trùng confirmPassword không
+        // Mặc dù frontend đã check, backend check lại cho chắc
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            throw new ResourceNotFoundException("Mật khẩu xác nhận không khớp.");
+        }
+
+        // 4. Cập nhật mật khẩu mới (Nhớ encode)
+        currentUser.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        System.out.println(">>> Đang lưu mật khẩu mới: " + passwordEncoder.encode(request.getNewPassword()));
+        // 5. Lưu xuống DB
+        this.userRepository.save(currentUser);
+    }
+
+    // 1. Xử lý Forgot Password
+    public void handleForgotPassword(String email) {
+        User user = this.userRepository.findByEmail(email);
+        if (user == null) {
+            throw new ResourceNotFoundException("Email không tồn tại.");
+        }
+
+        // TẠO JWT THAY VÌ UUID
+        String jwtToken = securityUtil.createPasswordResetToken(email);
+
+        // Gửi email chứa JWT
+        this.emailService.sendResetPasswordEmail(user.getEmail(), jwtToken);
+    }
+
+    // 2. Xử lý Reset Password
+    public void handleResetPassword(ReqResetPasswordDTO request)  {
+        // GIẢI MÃ JWT
+        Jwt decodedToken;
+        try {
+            decodedToken = securityUtil.checkValidToken(request.getToken());
+        } catch (Exception e) {
+            throw new ResourceNotFoundException("Token không hợp lệ hoặc đã hết hạn.");
+        }
+
+        // Lấy email từ trong token
+        String email = decodedToken.getSubject();
+
+        // Tìm user để đổi pass
+        User user = this.userRepository.findByEmail(email);
+        if (user == null) {
+            throw new ResourceNotFoundException("Người dùng không tồn tại.");
+        }
+
+        // Cập nhật mật khẩu
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        this.userRepository.save(user);
+    }
+
+
+
+    public ResLoginDTO handleLoginGoogle(String idTokenString) throws Exception {
+        // 1. Cấu hình Verifier
+        //để chắc chắn token do Google cấp và dành cho Client ID của app mình (tránh giả mạo).
+        GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(new NetHttpTransport(), new GsonFactory())
+                // Chỉ chấp nhận token được tạo cho Client ID của ứng dụng này
+                .setAudience(Collections.singletonList("260514782848-0elml36gqbvutbmbbftnaes2ab48hsgh.apps.googleusercontent.com"))
+                .build();
+
+        // 2. Xác thực Token
+        GoogleIdToken idToken = verifier.verify(idTokenString);
+        if (idToken == null) {
+            throw new ResourceNotFoundException("Token Google không hợp lệ!");
+        }
+
+        // 3. Lấy thông tin người dùng từ Token
+        GoogleIdToken.Payload payload = idToken.getPayload();
+        String email = payload.getEmail();
+        String name = (String) payload.get("name");
+
+        // 4. Kiểm tra User trong DB
+        User currentUser = this.userRepository.findByEmail(email);
+
+        // Nếu user chưa tồn tại -> TỰ ĐỘNG ĐĂNG KÝ
+        if (currentUser == null) {
+            currentUser = new User();
+            currentUser.setEmail(email);
+            currentUser.setName(name);
+            // Đặt pass ngẫu nhiên vì họ login bằng Google
+            currentUser.setPassword(passwordEncoder.encode(UUID.randomUUID().toString()));
+            currentUser.setActive(true); // Active luôn
+            Role userRole = this.roleService.handleGetRoleByName("USER");
+            // 2. Gán vào user
+            if (userRole != null) {
+                currentUser.setRole(userRole);
+            }
+
+            this.userRepository.save(currentUser);
+        }
+
+        // 5. Tạo Access Token & Refresh Token (Logic giống hệt login thường)
+        // (Bạn nên copy logic tạo ResLoginDTO từ hàm login thường xuống đây)
+        ResLoginDTO res = new ResLoginDTO();
+        ResLoginDTO.UserRefreshToken userLogin = new ResLoginDTO.UserRefreshToken();
+        userLogin.setEmail( currentUser.getEmail());
+        userLogin.setName(currentUser.getName());
+        userLogin.setId(currentUser.getId());
+        if (currentUser.getRole() != null) {
+            // Nếu sau này user có role thì map vào
+            userLogin.setRole(currentUser.getRole());
+        } else {
+            // Nếu không có role -> trả về null
+            userLogin.setRole(null);
+        }
+        res.setUser(userLogin);
+
+        // Tạo token JWT hệ thống
+        String access_token = this.securityUtil.createAccessToken(currentUser.getEmail(), res);
+        res.setAccessToken(access_token);
+
+        // Cập nhật refresh token vào DB... (giống login thường)
+        String refresh_token = this.securityUtil.createRefreshToken(email, res);
+        this.UpdateUserToken(refresh_token, email);
+
+        // Lưu refresh token vào res để controller set cookie
+        // (Bạn có thể trả về object chứa cả refresh token để controller xử lý)
+        res.setRefreshToken(refresh_token);
+
+        return res;
     }
 }

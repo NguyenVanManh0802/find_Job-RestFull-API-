@@ -65,9 +65,51 @@ public class EmailService {
         this.sendEmailSync(to, subject, content, false, true);
     }
 
+    // Hàm gửi email xác thực
+    public void sendVerificationEmail(String name, String toEmail, String token) {
+        String subject = "Hoàn tất đăng ký tài khoản FindJob";
 
+        // Link này trỏ về Frontend hoặc Backend.
+        // Ví dụ trỏ về Backend API để test:
+        //String verificationLink = "http://localhost:8080/api/v1/auth/verify?token=" + token;
 
+        // Nếu làm chuẩn Frontend React:
+        String verificationLink = "http://localhost:3000/verify?token=" + token;
 
+        Context context = new Context();
+        context.setVariable("name", name);
+        context.setVariable("link", verificationLink);
 
+        // Lưu ý: Phải có file "verify-account.html" trong thư mục templates
+        String content = this.templateEngine.process("verify-account", context);
+
+        this.sendEmailSync(toEmail, subject, content, false, true);
+    }
+
+//send reset password
+    public void sendResetPasswordEmail(String to, String token) {
+        String subject = "Yêu cầu đặt lại mật khẩu - FindJob";
+
+        // Link trỏ về trang Reset Password của Frontend (ReactJS)
+        // Token JWT được đính kèm vào tham số ?token=...
+        String url = "http://localhost:3000/reset-password?token=" + token;
+
+        // Tạo nội dung HTML đơn giản (Inline CSS để đảm bảo hiển thị tốt trên Gmail)
+        String content = "<div style='font-family: Arial, sans-serif; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px; max-width: 600px; margin: 0 auto;'>"
+                + "<h2 style='color: #1677ff;'>Xin chào,</h2>"
+                + "<p>Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản FindJob của bạn.</p>"
+                + "<p>Vui lòng nhấn vào nút bên dưới để thiết lập mật khẩu mới (Link này sẽ hết hạn sau 15 phút):</p>"
+                + "<div style='text-align: center; margin: 30px 0;'>"
+                + "<a href='" + url + "' style='background-color: #1677ff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 16px;'>Đặt lại mật khẩu</a>"
+                + "</div>"
+                + "<p style='color: #666; font-size: 13px;'>Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email này. Tài khoản của bạn vẫn an toàn.</p>"
+                + "<hr style='border: 0; border-top: 1px solid #eee; margin: 20px 0;' />"
+                + "<p style='text-align: center; color: #999; font-size: 12px;'>FindJob Support Team</p>"
+                + "</div>";
+
+        // Gọi hàm gửi mail đồng bộ (hoặc bất đồng bộ tùy cấu hình của bạn)
+        // sendEmailSync(người nhận, tiêu đề, nội dung, isMultipart, isHtml)
+        this.sendEmailSync(to, subject, content, false, true);
+    }
 
 }

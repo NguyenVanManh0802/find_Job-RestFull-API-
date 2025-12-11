@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Xác thực tài khoản</title>
+    <style>
+        .container { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; }
+        .btn { background-color: #28a745; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold; }
+        .footer { margin-top: 20px; font-size: 12px; color: #888; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2>Xin chào <span th:text="${name}"></span>!</h2>
+    <p>Cảm ơn bạn đã đăng ký tham gia FindJob.</p>
+    <p>Để hoàn tất quá trình đăng ký, vui lòng nhấn vào nút bên dưới để xác thực địa chỉ email của bạn:</p>
+    <br>
+    <div style="text-align: center;">
+        <a th:href="${link}" class="btn">XÁC THỰC TÀI KHOẢN</a>
+    </div>
+    <br>
+    <p>Link này sẽ hết hạn sau 24 giờ.</p>
+    <p>Nếu nút bấm không hoạt động, hãy copy link sau vào trình duyệt:</p>
+    <p th:text="${link}" style="word-break: break-all; color: #007bff;"></p>
+
+    <div class="footer">
+        <p>Trân trọng,<br>Đội ngũ FindJob</p>
+    </div>
+</div>
+</body>
+</html>

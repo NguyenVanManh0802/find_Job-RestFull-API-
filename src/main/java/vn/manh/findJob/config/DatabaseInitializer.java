@@ -83,7 +83,6 @@ public class DatabaseInitializer implements CommandLineRunner {
             arr.add(new Permission("Delete a subscriber", "/api/v1/subscribers/{id}", "DELETE", "SUBSCRIBERS"));
             arr.add(new Permission("Get a subscriber by id", "/api/v1/subscribers/{id}", "GET", "SUBSCRIBERS"));
             arr.add(new Permission("Get subscribers with pagination", "/api/v1/subscribers", "GET", "SUBSCRIBERS"));
-
             arr.add(new Permission("Download a file", "/api/v1/files", "POST", "FILES"));
             arr.add(new Permission("Upload a file", "/api/v1/files", "GET", "FILES"));
 
@@ -110,7 +109,7 @@ public class DatabaseInitializer implements CommandLineRunner {
             adminUser.setGender(GenderEnum.MALE);
             adminUser.setName("I'm super admin");
             adminUser.setPassword(this.passwordEncoder.encode("123456"));
-
+            adminUser.setActive(true);
             Role adminRole = this.roleRepository.findByName("SUPER_ADMIN");
             if (adminRole != null) {
                 adminUser.setRole(adminRole);

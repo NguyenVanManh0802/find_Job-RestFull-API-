@@ -137,7 +137,7 @@ public class ResumeService {
                 .map(resumeMapper::toResumeDTO) // Áp dụng hàm mapping cho từng user
                 .collect(Collectors.toList());     // Gom kết quả lại thành một List mới
 
-        // Gán danh sách DTO đã được chuyển đổi vào kết quả
+        //Gán danh sách DTO đã được chuyển đổi vào kết quả
         rs.setResult(ResumeDTOList);
         return rs;
     }

@@ -17,6 +17,7 @@ public class ResLoginDTO {
     @JsonProperty("access_token")
     private String accessToken;
     private UserRefreshToken user;
+    private String refreshToken;
 
     @Getter
     @Setter

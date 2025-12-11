@@ -35,7 +35,9 @@ public class SecurityUtil {
     @Value("${hoidanit.jwt.refresh-token-validity-in-seconds}")
     private long refreshTokenExpiration;
 
-
+    //expiration verify Email
+    @Value(("${hoidanit.jwt.verification.expiration}"))
+    private long verifyEmailTokenExpiration;
     public String createAccessToken(String email, ResLoginDTO dto)
     {
         ResLoginDTO.UserInsideToken userInsideToken=new ResLoginDTO.UserInsideToken();
@@ -84,6 +86,53 @@ public class SecurityUtil {
         JwsHeader jwsHeader = JwsHeader.with(JWT_ALGORITHM).build();
         return this.jwtEncoder.encode(JwtEncoderParameters.from(jwsHeader, claims)).getTokenValue();
 
+    }
+
+
+    //create token enbale account when user register
+    public String createEmailVerificationToken(String email) {
+        Instant now = Instant.now();
+        // Token kích hoạt tồn tại trong 24 giờ
+        Instant validity = now.plus(this.verifyEmailTokenExpiration, ChronoUnit.HOURS);
+
+        // Payload
+        JwtClaimsSet claims = JwtClaimsSet.builder()
+                .issuedAt(now)
+                .expiresAt(validity)
+                .subject(email) // Lưu email vào subject
+                .claim("type", "EMAIL_VERIFICATION") // Đánh dấu loại token để phân biệt
+                .build();
+
+        JwsHeader jwsHeader = JwsHeader.with(JWT_ALGORITHM).build();
+        return this.jwtEncoder.encode(JwtEncoderParameters.from(jwsHeader, claims)).getTokenValue();
+    }
+    public Jwt checkValidToken(String token) {
+        NimbusJwtDecoder jwtDecoder = NimbusJwtDecoder.withSecretKey(
+                getSecretKey()).macAlgorithm(JWT_ALGORITHM).build();
+        try {
+            return jwtDecoder.decode(token);
+        } catch (Exception e) {
+            System.out.println(">>> Token Error: " + e.getMessage());
+            throw e;
+        }
+    }
+
+    //
+// Tạo Token Reset Password (chỉ sống 15 phút)
+    public String createPasswordResetToken(String email) {
+        Instant now = Instant.now();
+        Instant validity = now.plus(15, ChronoUnit.MINUTES); // Hết hạn sau 15p
+
+        // Payload
+        JwtClaimsSet claims = JwtClaimsSet.builder()
+                .issuedAt(now)
+                .expiresAt(validity)
+                .subject(email)
+                .claim("type", "RESET_PASSWORD") // Đánh dấu loại token
+                .build();
+
+        JwsHeader jwsHeader = JwsHeader.with(JWT_ALGORITHM).build();
+        return this.jwtEncoder.encode(JwtEncoderParameters.from(jwsHeader, claims)).getTokenValue();
     }
 
     /**

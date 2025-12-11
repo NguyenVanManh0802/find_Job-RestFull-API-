@@ -55,7 +55,9 @@ public class RoleService {
         return roleRepository.findByIdWithPermissions(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Role not found with id: " + id));
     }
-
+    public Role handleGetRoleByName(String name) {
+        return this.roleRepository.findByName(name);
+    }
     public Role createRole(Role role) {
         if (roleRepository.existsByName(role.getName())) {
             throw new ResourceAlreadyExistsException("Role with name '" + role.getName() + "' already exists.");

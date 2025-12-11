@@ -24,6 +24,7 @@ public class UserResponseDTO {
     private String name;
     private int age;
     private GenderEnum gender;
+    private boolean active;
     private String address;
     private Instant createdAt;
     private Instant updatedAt;

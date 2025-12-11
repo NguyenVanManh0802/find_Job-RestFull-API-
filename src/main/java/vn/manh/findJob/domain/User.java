@@ -8,7 +8,6 @@ import jakarta.validation.constraints.Pattern;
 import lombok.*;
 import vn.manh.findJob.service.SecurityUtil;
 import vn.manh.findJob.util.constant.GenderEnum;
-
 import java.time.Instant;
 import java.util.List;
 
@@ -30,6 +29,8 @@ public class User {
     private String name;
     private String password;
     private int age;
+    @Builder.Default
+    private boolean active=true;
     @Enumerated(EnumType.STRING)
     private GenderEnum gender;
     private String address;
@@ -47,7 +48,7 @@ public class User {
     private Company company;
 
 
-    @OneToMany(mappedBy = "user", fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
     @JsonIgnore
     List<Resume> resumes;
 
@@ -55,6 +56,7 @@ public class User {
     //relation user với role
     @ManyToOne
     @JoinColumn(name = "role_id")
+
     private Role role;
 
     @PrePersist

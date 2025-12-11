@@ -14,6 +14,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import vn.manh.findJob.domain.User;
+import vn.manh.findJob.dto.Auth.ReqChangePasswordDTO;
 import vn.manh.findJob.dto.ResponseData;
 import vn.manh.findJob.dto.ResultPaginationDTO;
 import vn.manh.findJob.dto.User.UserResponseDTO;
@@ -124,5 +125,21 @@ public class UserController {
         // Trả về 200 OK cùng message xác nhận là một cách tiếp cận thực tế.
         return ResponseEntity.ok(responseData);
     }
+
+    //api đổi password
+    @PostMapping("/change-password")
+    public ResponseEntity<ResponseData<String>> changePassword(@Valid @RequestBody ReqChangePasswordDTO request) {
+        // Gọi service xử lý
+        this.userService.handleChangePassword(request);
+
+        return ResponseEntity.ok(new ResponseData<>(
+                HttpStatus.OK.value(),
+                "Đổi mật khẩu thành công",
+                null
+        ));
+    }
+
+
+
 
 }

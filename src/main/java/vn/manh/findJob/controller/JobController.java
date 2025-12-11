@@ -15,8 +15,10 @@ import vn.manh.findJob.domain.Company;
 import vn.manh.findJob.domain.Job;
 import vn.manh.findJob.domain.User;
 import vn.manh.findJob.dto.JobDTO;
+import vn.manh.findJob.dto.ReqJobFilterDTO;
 import vn.manh.findJob.dto.ResponseData;
 import vn.manh.findJob.dto.ResultPaginationDTO;
+import vn.manh.findJob.repository.JobSpecifications;
 import vn.manh.findJob.service.JobService;
 import vn.manh.findJob.service.SecurityUtil;
 import vn.manh.findJob.service.UserService;
@@ -59,8 +61,12 @@ public class JobController {
 
         // 1. Lấy thông tin User hiện tại
         String email = SecurityUtil.getCurrentUserLogin().orElse("");
+        if(email.equals("") || email == "" || email.equals("anonymousUser"))
+        {
+            ResultPaginationDTO result = jobService.getAllJob(specification, pageable);
+            return ResponseEntity.ok(new ResponseData<>(HttpStatus.OK.value(), "Fetch all jobs successful", result));
+        }
         User currentUser = this.userService.handleGetUserByUserName(email);
-
         if (currentUser != null) {
             Company userCompany = currentUser.getCompany();
 
@@ -83,6 +89,7 @@ public class JobController {
             }
         }
 
+
         // 3. Nếu là Admin hoặc User thường -> Xem tất cả
         ResultPaginationDTO result = jobService.getAllJob(specification, pageable);
         return ResponseEntity.ok(new ResponseData<>(HttpStatus.OK.value(), "Fetch all jobs successful", result));
@@ -101,6 +108,24 @@ public class JobController {
         return ResponseEntity.ok(responseData);
     }
 
+
+    @PostMapping("/search")
+    public ResponseEntity<ResponseData<ResultPaginationDTO>> searchJobs(
+            @RequestBody ReqJobFilterDTO jobFilterDTO,
+            Pageable pageable) {
+
+        // 1. Tạo Specification từ DTO
+        Specification<Job> spec = JobSpecifications.filterJob(jobFilterDTO);
+
+        // 2. Gọi Service (Service gọi Repository.findAll(spec, pageable))
+        // Bạn có thể tận dụng hàm getAllJob cũ nếu nó nhận tham số Specification
+        ResultPaginationDTO result = jobService.getAllJob(spec, pageable);
+
+        return ResponseEntity.ok(new ResponseData<>(
+                HttpStatus.OK.value(),
+                "Search jobs successful",
+                result));
+    }
     // update job by id
     @PutMapping("/{id}")
     public ResponseEntity<ResponseData<JobDTO>> updateJobById(@PathVariable long id, @RequestBody Job job) {

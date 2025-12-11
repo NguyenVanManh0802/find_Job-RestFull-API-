@@ -43,7 +43,8 @@ public class SecurityConfiguration {
     public SecurityFilterChain filterChain(HttpSecurity http, AuthenticationEntryPoint customAuthenticationEntryPoint) throws Exception {
         String[] whiteList={"/","/api/v1/auth/login","/api/v1/auth/refresh",
                 "/api/v1/companies/**","/api/v1/jobs/**",
-                "/storage/**","/api/v1/auth/register"
+                "/storage/**","/api/v1/auth/register",
+                "/api/v1/auth/verify","/api/v1/auth/login-google"     // API xác thực email
 
         };
         http
@@ -56,6 +57,9 @@ public class SecurityConfiguration {
                                 .requestMatchers(HttpMethod.GET,"/api/v1/companies").permitAll()
                                 .requestMatchers(HttpMethod.GET,"/api/v1/jobs").permitAll()
                                 .requestMatchers(HttpMethod.GET,"/api/v1/skills").permitAll()
+                                .requestMatchers(HttpMethod.POST, "/api/v1/jobs/search").permitAll()
+                                .requestMatchers(HttpMethod.POST, "/api/v1/auth/forgot-password").permitAll()
+                                .requestMatchers(HttpMethod.POST, "/api/v1/auth/reset-password").permitAll()
                                 // THÊM DÒNG NÀY: Cho phép logout mà không cần token hợp lệ
                                 .requestMatchers("/api/v1/auth/logout").permitAll()
                                 .anyRequest().authenticated()
