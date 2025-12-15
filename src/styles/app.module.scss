@@ -8,3 +8,14 @@
     height: 100%;
     width: 100%;
 }
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Phần nội dung chính (giữa Header và Footer) phải giãn ra */
+.main-content { /* Class bọc thẻ <Outlet /> hoặc nội dung trang */
+  flex: 1; 
+  background-color: #f0f2f5; /* Màu nền chung */
+}

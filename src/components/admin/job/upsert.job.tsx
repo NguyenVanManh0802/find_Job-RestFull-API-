@@ -13,6 +13,8 @@ import { CheckSquareOutlined } from "@ant-design/icons";
 import enUS from 'antd/lib/locale/en_US';
 import dayjs from 'dayjs';
 import { IJob, ISkill } from "@/types/backend";
+// 1. Thêm import hook của Redux
+import { useAppSelector } from "@/redux/hooks"; 
 
 interface ISkillSelect {
     label: string;
@@ -29,9 +31,13 @@ const ViewUpsertJob = (props: any) => {
 
     let location = useLocation();
     let params = new URLSearchParams(location.search);
-    const id = params?.get("id"); // job id
+    const id = params?.get("id");
     const [dataUpdate, setDataUpdate] = useState<IJob | null>(null);
     const [form] = Form.useForm();
+
+    // 2. Lấy thông tin User và check quyền Admin
+    const user = useAppSelector(state => state.account.user);
+    const isSuperAdmin = user?.role?.name === "SUPER_ADMIN";
 
     useEffect(() => {
         const init = async () => {
@@ -120,6 +126,7 @@ const ViewUpsertJob = (props: any) => {
         let companyId = "";
         let companyLogo = "";
         
+        // Logic xử lý company khi có dữ liệu gửi lên (Admin chọn)
         if (values.company) {
             const rawVal = values.company.value ?? values.company;
             if (typeof rawVal === 'string' && rawVal.includes('@#$')) {
@@ -141,11 +148,12 @@ const ViewUpsertJob = (props: any) => {
         const job = {
             name: values.name,
             skills: arrSkills,
-            company: {
+            // Nếu là Admin thì lấy company từ form, nếu HR thì để null/undefined (Backend tự điền)
+            company: isSuperAdmin ? {
                 id: +companyId, 
                 name: values.company.label ?? values.company.name,
                 logo: companyLogo
-            },
+            } : undefined,
             location: values.location,
             salary: values.salary,
             quantity: values.quantity,
@@ -153,11 +161,10 @@ const ViewUpsertJob = (props: any) => {
             description: value,
             startDate: dayjs(values.startDate).toDate(),
             endDate: dayjs(values.endDate).toDate(),
-            active: values.active
+            active: values.active // Backend sẽ chặn nếu không phải Admin
         };
 
         if (dataUpdate?.id) {
-            // --- FIX: Ép kiểu (as any) để tránh lỗi TypeScript ---
             const res = await callUpdateJob(job as any, dataUpdate.id);
             if (res.data) {
                 message.success("Cập nhật job thành công");
@@ -169,7 +176,6 @@ const ViewUpsertJob = (props: any) => {
                 });
             }
         } else {
-            // --- FIX: Ép kiểu (as any) để tránh lỗi TypeScript ---
             const res = await callCreateJob(job as any);
             if (res.data) {
                 message.success("Tạo mới job thành công");
@@ -284,7 +290,8 @@ const ViewUpsertJob = (props: any) => {
                                 />
                             </Col>
 
-                            {(dataUpdate?.id || !id) &&
+                            {/* --- 3. Chỉ Admin mới được chọn Company --- */}
+                            {isSuperAdmin && (
                                 <Col span={24} md={6}>
                                     <ProForm.Item
                                         name="company"
@@ -307,8 +314,10 @@ const ViewUpsertJob = (props: any) => {
                                         />
                                     </ProForm.Item>
                                 </Col>
-                            }
+                            )}
+                            {/* ----------------------------------------- */}
                         </Row>
+                        
                         <Row gutter={[20, 20]}>
                             <Col span={24} md={6}>
                                 <ProFormDatePicker
@@ -330,16 +339,22 @@ const ViewUpsertJob = (props: any) => {
                                     placeholder="dd/mm/yyyy"
                                 />
                             </Col>
-                            <Col span={24} md={6}>
-                                <ProFormSwitch
-                                    label="Trạng thái"
-                                    name="active"
-                                    checkedChildren="ACTIVE"
-                                    unCheckedChildren="INACTIVE"
-                                    initialValue={true}
-                                    fieldProps={{ defaultChecked: true }}
-                                />
-                            </Col>
+
+                            {/* --- 4. Chỉ Admin mới được chỉnh Active --- */}
+                            {isSuperAdmin && (
+                                <Col span={24} md={6}>
+                                    <ProFormSwitch
+                                        label="Trạng thái"
+                                        name="active"
+                                        checkedChildren="ACTIVE"
+                                        unCheckedChildren="INACTIVE"
+                                        initialValue={true}
+                                        fieldProps={{ defaultChecked: true }}
+                                    />
+                                </Col>
+                            )}
+                            {/* ----------------------------------------- */}
+
                             <Col span={24}>
                                 <ProForm.Item
                                     name="description"

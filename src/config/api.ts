@@ -1,11 +1,20 @@
-import { IBackendRes, ICompany, IAccount, IUser, IModelPaginate, IGetAccount, IJob, IResume, IPermission, IRole, ISkill } from '@/types/backend';
+import { IBackendRes,ISubscriber, ICompany, IAccount, IUser, IModelPaginate, IGetAccount, IJob, IResume, IPermission, IRole, ISkill } from '@/types/backend';
 import axios from 'config/axios-customize';
+
+
+/**
+ * search
+ * 
+ */
+
+
 
 /**
  * Module Auth
  */
-export const callRegister = (name: string, email: string, password: string, age: number, gender: string, address: string) => {
-    return axios.post<IBackendRes<IUser>>('/api/v1/auth/register', { name, email, password, age, gender, address })
+export const callRegister = (user: any) => {
+    // user chính là object { name, email, password, ... }
+    return axios.post('/api/v1/auth/register', user);
 }
 
 export const callLogin = (username: string, password: string) => {
@@ -130,6 +139,10 @@ export const callFetchJobById = (id: string) => {
     return axios.get<IBackendRes<IJob>>(`/api/v1/jobs/${id}`);
 }
 
+
+export const callCreateSubscriber = (companyId: number | string) => {
+    return axios.post<IBackendRes<ISubscriber>>('/api/v1/subscribers/subscribe', { companyId });
+}
 /**
  * Module Resume
  */
@@ -212,4 +225,37 @@ export const callFetchRole = (query: string) => {
 
 export const callFetchRoleById = (id: string) => {
     return axios.get<IBackendRes<IRole>>(`/api/v1/roles/${id}`);
+}
+
+// Đổi mật khẩu (Giả định bạn có endpoint này, nếu chưa có phải viết thêm ở Backend)
+// Nếu Backend chưa có, bạn có thể tạm dùng endpoint Update User để set password mới (nhưng cách này không an toàn vì không check pass cũ)
+export const callChangePassword = (currentPassword: string, newPassword: string, confirmPassword: string) => {
+    return axios.post('/api/v1/users/change-password', {
+        currentPassword, // Backend chờ field này
+        newPassword,
+        confirmPassword
+    });
+}
+
+
+// Gửi yêu cầu quên mật khẩu (Nhập email)
+export const callForgotPassword = (email: string) => {
+    return axios.post<IBackendRes<any>>('/api/v1/auth/forgot-password', { email });
+}
+
+// Đặt lại mật khẩu (Gửi token + mật khẩu mới)
+export const callResetPassword = (token: string, newPassword: string, confirmPassword: string) => {
+    return axios.post<IBackendRes<any>>('/api/v1/auth/reset-password', { 
+        token, 
+        newPassword, 
+        confirmPassword 
+    });
+}
+
+//api đăng nhập băng gg
+export const callLoginGoogle = (idToken: string) => {
+    // Body gửi lên phải có key là "idToken" để khớp với DTO Java GoogleLoginRequest
+    return axios.post<IBackendRes<IAccount>>('/api/v1/auth/login-google', { 
+        idToken: idToken 
+    });
 }

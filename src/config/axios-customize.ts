@@ -29,8 +29,22 @@ const handleRefreshToken = async (): Promise<string | null> => {
 };
 
 instance.interceptors.request.use(function (config) {
-    if (typeof window !== "undefined" && window && window.localStorage && window.localStorage.getItem('access_token')) {
-        config.headers.Authorization = 'Bearer ' + window.localStorage.getItem('access_token');
+    // 1. Lấy token ra biến trước để tránh gọi getItem nhiều lần
+  const access_token = typeof window !== "undefined" ? window.localStorage.getItem('access_token') : null;
+
+    // KIỂM TRA CHẶT CHẼ: Token phải tồn tại và KHÔNG ĐƯỢC là chuỗi "null" hay "undefined"
+    if (access_token && access_token !== "null" && access_token !== "undefined" && access_token !== "") {
+        config.headers.Authorization = 'Bearer ' + access_token;
+    } else {
+        // --- ĐOẠN QUAN TRỌNG: XÓA SẠCH HEADER RÁC ---
+        // Xóa Authorization để request trở thành Anonymous (Ẩn danh) hợp lệ
+        delete config.headers.Authorization;
+        delete config.headers['Authorization'];
+        
+        // Fix cho một số phiên bản Axios mới
+        if ((config.headers as any).delete) {
+             (config.headers as any).delete('Authorization');
+        }
     }
     if (!config.headers.Accept && config.headers["Content-Type"]) {
         config.headers.Accept = "application/json";
@@ -51,6 +65,8 @@ instance.interceptors.response.use(
             && error.config.url !== '/api/v1/auth/login'
             && !error.config.headers[NO_RETRY_HEADER]
         ) {
+
+            
             const access_token = await handleRefreshToken();
             error.config.headers[NO_RETRY_HEADER] = 'true'
             if (access_token) {

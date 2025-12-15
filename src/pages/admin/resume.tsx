@@ -2,7 +2,8 @@ import DataTable from "@/components/client/data-table";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { IResume } from "@/types/backend";
 import { ActionType, ProColumns, ProFormSelect } from '@ant-design/pro-components';
-import { Space, Tag, Tooltip, message, notification } from "antd";
+// 1. Thêm import Popconfirm
+import { Space, Tag, Tooltip, message, notification, Popconfirm } from "antd";
 import { useState, useRef } from 'react';
 import dayjs from 'dayjs';
 import { callDeleteResume } from "@/config/api";
@@ -12,8 +13,9 @@ import ViewDetailResume from "@/components/admin/resume/view.resume";
 import { ALL_PERMISSIONS } from "@/config/permissions";
 import Access from "@/components/share/access";
 import { sfIn } from "spring-filter-query-builder";
-import { EditOutlined } from "@ant-design/icons";
-import styles from '@/styles/admin.module.scss'; // Tái sử dụng style hiện đại
+// 2. Thêm import DeleteOutlined
+import { EditOutlined, DeleteOutlined, FilePdfOutlined } from "@ant-design/icons";
+import styles from '@/styles/admin.module.scss';
 
 const ResumePage = () => {
     const tableRef = useRef<ActionType>();
@@ -28,7 +30,7 @@ const ResumePage = () => {
     const handleDeleteResume = async (id: string | undefined) => {
         if (id) {
             const res = await callDeleteResume(id);
-            if (res && res.data) {
+            if (res && res.status===200) {
                 message.success('Xóa Resume thành công');
                 reloadTable();
             } else {
@@ -65,7 +67,6 @@ const ResumePage = () => {
             title: 'Trạng Thái',
             dataIndex: 'status',
             sorter: true,
-            // Render Tag màu cho trạng thái
             render: (_, entity) => {
                 let color = 'default';
                 if (entity.status === 'PENDING') color = 'orange';
@@ -96,6 +97,37 @@ const ResumePage = () => {
         },
 
         {
+        title: 'CV Ứng viên',
+        dataIndex: 'url', // Đây là tên file lưu trong DB (VD: 170123...CV.pdf)
+        hideInSearch: true,
+        render: (text, record) => {
+            // Logic ghép link:
+            // VITE_BACKEND_URL thường là http://localhost:8081
+            // "resume" là tên folder bạn đã code lúc upload (trong ResumeService/Controller)
+            const fileUrl = `${import.meta.env.VITE_BACKEND_URL}/storage/resume/${record.url}`;
+
+            return (
+                <a 
+                    href={fileUrl} 
+                    target="_blank" 
+                    rel="noreferrer"
+                    title="Xem hồ sơ chi tiết"
+                    style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: 5,
+                        color: '#1677ff',
+                        fontWeight: 500
+                    }}
+                >
+                   <FilePdfOutlined style={{ fontSize: '18px', color: 'red' }} />
+                   <span>Xem CV</span>
+                </a>
+            );
+        }
+    },
+        
+        {
             title: 'Job',
             dataIndex: ["job", "name"],
             hideInSearch: true,
@@ -107,7 +139,6 @@ const ResumePage = () => {
             hideInSearch: true,
             render: (dom, entity) => <span style={{fontWeight: 500, color: '#4a5568'}}>{entity.companyName}</span>
         },
-
         {
             title: 'Ngày tạo',
             dataIndex: 'createdAt',
@@ -135,7 +166,7 @@ const ResumePage = () => {
             align: 'center',
             render: (_value, entity, _index, _action) => (
                 <Space>
-                   <Access permission={ALL_PERMISSIONS.RESUMES.UPDATE} hideChildren>
+                    <Access permission={ALL_PERMISSIONS.RESUMES.UPDATE} hideChildren>
                         <Tooltip title="Chỉnh sửa trạng thái">
                             <EditOutlined
                                 className={styles['action-btn']}
@@ -150,7 +181,30 @@ const ResumePage = () => {
                                 }}
                             />
                         </Tooltip>
-                   </Access>
+                    </Access>
+
+                    {/* --- BỔ SUNG NÚT XÓA Ở ĐÂY --- */}
+                    <Access permission={ALL_PERMISSIONS.RESUMES.DELETE} hideChildren>
+                        <Popconfirm
+                            title="Xác nhận xóa?"
+                            description="Bạn có chắc chắn muốn xóa hồ sơ này không?"
+                            onConfirm={() => handleDeleteResume(entity.id as string)}
+                            okText="Xóa"
+                            cancelText="Hủy"
+                        >
+                            <Tooltip title="Xóa hồ sơ">
+                                <DeleteOutlined
+                                    style={{
+                                        fontSize: 20,
+                                        color: '#ff4d4f', // Màu đỏ cho nút xóa
+                                        cursor: 'pointer',
+                                        marginLeft: 10
+                                    }}
+                                />
+                            </Tooltip>
+                        </Popconfirm>
+                    </Access>
+                    {/* ----------------------------- */}
                 </Space>
             ),
         },
@@ -184,7 +238,7 @@ const ResumePage = () => {
     }
 
     return (
-        <div className={styles['page-container']}> {/* Container Style */}
+        <div className={styles['page-container']}>
             <Access permission={ALL_PERMISSIONS.RESUMES.GET_PAGINATE}>
                 <DataTable<IResume>
                     actionRef={tableRef}
@@ -192,15 +246,11 @@ const ResumePage = () => {
                     rowKey="id"
                     loading={isFetching}
                     columns={columns}
-                    
-                    // Cấu hình search
                     search={{
                         labelWidth: 'auto',
                         searchText: 'Tìm kiếm',
                         resetText: 'Làm mới',
                     }}
-
-                    // FIX: request trả về data trực tiếp
                     request={async (params, sort, filter): Promise<any> => {
                         const query = buildQuery(params, sort, filter);
                         const action = await dispatch(fetchResume({ query }));
@@ -218,7 +268,6 @@ const ResumePage = () => {
                         }
                         return { data: [], success: false };
                     }}
-                    
                     scroll={{ x: true }}
                     pagination={{
                         showSizeChanger: true,

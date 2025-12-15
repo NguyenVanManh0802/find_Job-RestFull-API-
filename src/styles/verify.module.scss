@@ -1,0 +1,27 @@
+.verify-container {
+    /* Sử dụng flex để căn giữa màn hình */
+    display: flex;
+    justify-content: center; 
+    align-items: center; 
+    
+    /* Chiều cao tối thiểu 80% màn hình để đẩy footer xuống đáy */
+    min-height: 80vh; 
+    background-color: #f0f2f5; 
+    padding: 20px;
+}
+
+.verify-content {
+    background: white;
+    padding: 40px;
+    border-radius: 12px;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08); /* Đổ bóng nhẹ cho đẹp */
+    width: 100%;
+    max-width: 600px; /* Giới hạn chiều rộng */
+    text-align: center;
+}
+
+/* Hiệu ứng hiện dần */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}

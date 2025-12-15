@@ -1,7 +1,7 @@
 export interface IBackendRes<T> {
     error?: string | string[];
     message: string;
-    statusCode: number | string;
+    status: number | string;
     data?: T;
 }
 
@@ -48,8 +48,19 @@ export interface ICompany {
     deletedAt?: boolean | null;
     createdAt?: string;
     updatedAt?: string;
+    // --- THÊM DÒNG NÀY ---
+    isFollowed?: boolean;
 }
 
+export interface ISubscriber{
+    id?: string;
+    name?: string;
+    email?: string;
+    company?: {
+        id?: string;
+        name?: string;
+    }
+}
 export interface ISkill {
     id?: string;
     name?: string;

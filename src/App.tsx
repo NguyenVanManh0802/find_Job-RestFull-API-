@@ -6,6 +6,7 @@ import {
   useLocation,
 } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from '@/redux/hooks';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 import NotFound from 'components/share/not.found';
 import Loading from 'components/share/loading';
 import LoginPage from 'pages/auth/login';
@@ -33,6 +34,9 @@ import JobTabs from './pages/admin/job/job.tabs';
 import BlogPage from './pages/BlogPage';
 import ClientAIJobPage from './pages/ClientAIJobPage';
 import CVTemplatePage from './pages/CVTemplatePage';
+import VerifyPage from "./pages/auth/Verify";
+import ForgotPasswordPage from "./components/client/modal/ForgotPasswordPage"
+import ResetPasswordPage from "./pages/auth/ResetPasswordPage"
 
 const LayoutClient = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -60,8 +64,6 @@ const LayoutClient = () => {
 export default function App() {
   const dispatch = useAppDispatch();
   const isLoading = useAppSelector(state => state.account.isLoading);
-
-
   useEffect(() => {
     if (
       window.location.pathname === '/login'
@@ -85,6 +87,16 @@ export default function App() {
         { path: "blog/salary", element: <BlogPage /> }, // Khai báo route
       { path: "job/ai-data", element: <ClientAIJobPage /> },
       { path: "cv-template", element: <CVTemplatePage /> },
+      { path:"/verify" ,element:<VerifyPage />},
+      {
+    path: "/forgot-password",
+    element: <ForgotPasswordPage />,
+},
+{
+    path: "/reset-password",
+    element: <ResetPasswordPage />,
+},
+      
       ],
     },
 
@@ -165,7 +177,9 @@ export default function App() {
   ]);
   return (
     <>
+    <GoogleOAuthProvider clientId="260514782848-0elml36gqbvutbmbbftnaes2ab48hsgh.apps.googleusercontent.com">
       <RouterProvider router={router} />
+    </GoogleOAuthProvider> 
     </>
   )
 }

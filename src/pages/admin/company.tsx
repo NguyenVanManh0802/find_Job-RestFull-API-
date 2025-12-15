@@ -27,7 +27,7 @@ const CompanyPage = () => {
     const handleDeleteCompany = async (id: string | undefined) => {
         if (id) {
             const res = await callDeleteCompany(id);
-            if (res && +res.statusCode === 200) {
+            if (res && +res.status === 200) {
                 message.success('Xóa Company thành công');
                 reloadTable();
             } else {

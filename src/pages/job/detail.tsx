@@ -2,14 +2,16 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from 'react';
 import { IJob } from "@/types/backend";
 import { callFetchJobById } from "@/config/api";
-import styles from '@/styles/client.job.detail.module.scss'; // Import Style mới
+import styles from '@/styles/client.job.detail.module.scss';
 import parse from 'html-react-parser';
-import { Col, Row, Skeleton, Button, Tag } from "antd";
+import { Col, Row, Skeleton, Button, Tooltip } from "antd"; // Thêm Tooltip
 import { DollarOutlined, EnvironmentOutlined, ClockCircleOutlined, CheckCircleOutlined } from "@ant-design/icons";
 import { getLocationName } from "@/config/utils";
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import ApplyModal from "@/components/client/modal/apply.modal";
+import { useAppSelector } from "@/redux/hooks"; // Import hook Redux
+
 dayjs.extend(relativeTime)
 
 const ClientJobDetailPage = (props: any) => {
@@ -21,6 +23,12 @@ const ClientJobDetailPage = (props: any) => {
     let params = new URLSearchParams(location.search);
     const id = params?.get("id"); 
 
+    // 1. Lấy thông tin user từ Redux
+    const user = useAppSelector(state => state.account.user);
+    const isAuthenticated = useAppSelector(state => state.account.isAuthenticated);
+    // 2. Logic kiểm tra quyền (Admin hoặc HR thì true)
+    // Điều kiện: Role là SUPER_ADMIN HOẶC có thông tin company (tức là HR)
+    const isAdminOrHR = user?.role?.name === 'SUPER_ADMIN' || user?.role?.name === 'HUMAN_RESOURCE';
     useEffect(() => {
         const init = async () => {
             if (id) {
@@ -73,21 +81,46 @@ const ClientJobDetailPage = (props: any) => {
                                             ))}
                                         </div>
 
-                                        <div>
-                                            <Button 
-                                                type="primary"
-                                                size="large"
-                                                className={styles["apply-btn"]}
-                                                onClick={() => setIsModalOpen(true)}
-                                            >
-                                                Ứng tuyển ngay
-                                            </Button>
+                                        <div style={{ marginTop: 20 }}>
+                                            {/* LOGIC HIỂN THỊ NÚT APPLY */}
+                                            {isAuthenticated === false ? (
+                                                // Chưa đăng nhập -> Hiện nút để đăng nhập
+                                                <Button 
+                                                    type="primary" 
+                                                    size="large" 
+                                                    className={styles["apply-btn"]}
+                                                    onClick={() => setIsModalOpen(true)} // Modal sẽ handle việc bắt login
+                                                >
+                                                    Đăng nhập để Ứng tuyển
+                                                </Button>
+                                            ) : isAdminOrHR ? (
+                                                // Đã đăng nhập nhưng là Admin/HR -> Disable nút
+                                                <Tooltip title="Tài khoản Quản trị/Nhà tuyển dụng không thể ứng tuyển">
+                                                    <Button 
+                                                        type="primary" 
+                                                        size="large" 
+                                                        disabled 
+                                                        style={{ background: '#ccc', borderColor: '#ccc', color: '#666', fontWeight: 600 }}
+                                                    >
+                                                        Không thể ứng tuyển
+                                                    </Button>
+                                                </Tooltip>
+                                            ) : (
+                                                // Là User bình thường -> Hiện nút Apply
+                                                <Button 
+                                                    type="primary" 
+                                                    size="large" 
+                                                    className={styles["apply-btn"]}
+                                                    onClick={() => setIsModalOpen(true)}
+                                                >
+                                                    Ứng tuyển ngay
+                                                </Button>
+                                            )}
                                         </div>
                                     </div>
 
                                     {/* 2. Job Description Body */}
                                     <div className={styles["job-description-card"]}>
-                                        {/* Thêm phần "Tại sao chọn chúng tôi" giả lập cho đẹp nếu muốn */}
                                         <h3>3 Lý do để gia nhập công ty</h3>
                                         <ul style={{listStyle: 'none', padding: 0}}>
                                             <li><CheckCircleOutlined style={{color: 'green', marginRight: 8}}/>Môi trường làm việc quốc tế năng động</li>
@@ -95,8 +128,6 @@ const ClientJobDetailPage = (props: any) => {
                                             <li><CheckCircleOutlined style={{color: 'green', marginRight: 8}}/>Cơ hội onsite tại Nhật, Mỹ, Châu Âu</li>
                                         </ul>
                                         <br/>
-                                        
-                                        {/* Nội dung HTML từ DB */}
                                         {parse(jobDetail.description ?? "")}
                                     </div>
                                 </Col>
@@ -115,7 +146,6 @@ const ClientJobDetailPage = (props: any) => {
                                             {jobDetail.company?.name}
                                         </div>
                                         
-                                        {/* Link tới trang chi tiết công ty nếu có */}
                                         <div style={{marginTop: 15}}>
                                             <a href="#" className={styles["view-company-link"]}>Xem hồ sơ công ty &rarr;</a>
                                         </div>

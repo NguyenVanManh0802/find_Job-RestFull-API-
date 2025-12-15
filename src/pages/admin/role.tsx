@@ -26,7 +26,7 @@ const RolePage = () => {
     const handleDeleteRole = async (id: string | undefined) => {
         if (id) {
             const res = await callDeleteRole(id);
-            if (res && +res.statusCode === 200) {
+            if (res && +res.status === 200) {
                 message.success('Xóa Role thành công');
                 reloadTable();
             } else {

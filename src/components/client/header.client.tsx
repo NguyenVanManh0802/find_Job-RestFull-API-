@@ -178,7 +178,6 @@ const fetchJobsMetadata = async () => {
             default: return level;
         }
     }
-
 const handleLogout = async () => {
     try {
         // 1. Gọi API để Backend xóa Cookie (nếu được)
@@ -320,11 +319,11 @@ const handleLogout = async () => {
             key: 'manage-account',
             icon: <ProfileOutlined />
         },
-        ...(user.role?.permissions?.length ? [{
-            label: <Link to={"/admin"}>Trang Quản Trị</Link>,
-            key: 'admin',
-            icon: <DashboardOutlined />
-        }] : []),
+      ...(user?.role?.name && user.role.name !== 'USER' ? [{
+        label: <Link to={"/admin"}>Trang Quản Trị</Link>,
+        key: 'admin',
+        icon: <DashboardOutlined />
+    }] : []),
         { type: 'divider' },
         {
             label: <div onClick={() => handleLogout()} style={{ cursor: 'pointer' }}>Đăng xuất</div>,

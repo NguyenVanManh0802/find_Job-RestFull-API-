@@ -24,7 +24,7 @@ const SkillPage = () => {
     const handleDeleteSkill = async (id: string | undefined) => {
         if (id) {
             const res = await callDeleteSkill(id);
-            if (res && +res.statusCode === 200) {
+            if (res && +res.status === 200) {
                 message.success('Xóa Skill thành công');
                 reloadTable();
             } else {

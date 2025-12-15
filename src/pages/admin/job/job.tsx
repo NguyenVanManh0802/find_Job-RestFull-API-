@@ -1,12 +1,14 @@
 import DataTable from "@/components/client/data-table";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { IJob } from "@/types/backend";
-import { DeleteOutlined, EditOutlined, PlusOutlined, EyeOutlined } from "@ant-design/icons";
-import { ActionType, ProColumns, ProFormSelect } from '@ant-design/pro-components';
-import { Button, Popconfirm, Space, Tag, Tooltip, message, notification } from "antd";
-import { useRef, useEffect } from 'react';
+import { DeleteOutlined, EditOutlined, PlusOutlined, CheckCircleOutlined, CloseCircleOutlined } from "@ant-design/icons";
+import { ActionType, ProColumns } from '@ant-design/pro-components';
+// 1. Thêm import Alert
+import { Button, Popconfirm, Space, Tag, Tooltip, message, notification, Alert } from "antd";
+import { useRef, useState, useEffect } from 'react';
 import dayjs from 'dayjs';
-import { callDeleteJob } from "@/config/api";
+// 2. Thêm import callFetchJob
+import { callDeleteJob, callUpdateJob, callFetchJob } from "@/config/api"; 
 import queryString from 'query-string';
 import { useNavigate } from "react-router-dom";
 import { fetchJob } from "@/redux/slice/jobSlide";
@@ -17,16 +19,42 @@ import styles from '@/styles/admin.module.scss';
 
 const JobPage = () => {
     const tableRef = useRef<ActionType>();
+    
+    // 3. State lưu số lượng chờ duyệt
+    const [pendingJobCount, setPendingJobCount] = useState<number>(0);
 
     const isFetching = useAppSelector(state => state.job.isFetching);
     const meta = useAppSelector(state => state.job.meta);
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
 
+    const user = useAppSelector(state => state.account.user);
+    const isSuperAdmin = user?.role?.name === "SUPER_ADMIN";
+
     useEffect(() => {
+        // a. Load dữ liệu bảng (Logic cũ)
         const query = buildQuery({ current: 1, pageSize: 10 }, null, null);
         dispatch(fetchJob({ query }));
-    }, []);
+
+        // b. --- LOGIC MỚI: Đếm số Job đang chờ duyệt ---
+        // Chỉ Admin mới cần xem thông báo này
+        if (isSuperAdmin) {
+            const fetchPendingCount = async () => {
+                // Filter: active = false
+                // PageSize = 1 (Tối ưu: chỉ cần lấy field meta.total, không cần lấy data list)
+                const queryPending = `current=1&pageSize=1&filter=active:false`;
+                
+                const res = await callFetchJob(queryPending);
+                if (res && res.data && res.data.meta) {
+                    setPendingJobCount(res.data.meta.total);
+                }
+            }
+            fetchPendingCount();
+        }
+        // -----------------------------------------------
+        
+    }, [isSuperAdmin]); // Thêm dependency
+
 
     const handleDeleteJob = async (id: string | undefined) => {
         if (id) {
@@ -43,20 +71,38 @@ const JobPage = () => {
         }
     }
 
+    const handleApproveJob = async (job: IJob) => {
+        if (!job.id) return;
+        const updatedJob = { ...job, active: true };
+        const res = await callUpdateJob(updatedJob, job.id);
+        
+        if (res && res.data) {
+            message.success('Duyệt bài đăng thành công!');
+            reloadTable();
+            
+            // Cập nhật lại số lượng chờ duyệt sau khi duyệt xong
+            if(pendingJobCount > 0) setPendingJobCount(prev => prev - 1);
+        } else {
+            notification.error({
+                message: 'Có lỗi xảy ra',
+                description: res.message
+            });
+        }
+    }
+
     const reloadTable = () => {
         tableRef?.current?.reload();
     }
 
-    // --- HÀM CHỌN MÀU (Đã nâng cấp bảng màu dịu mắt hơn) ---
     const getColorLevel = (level: string) => {
         switch (level) {
-            case 'INTERN': return '#87d068'; // Green
-            case 'FRESHER': return '#2db7f5'; // Cyan
-            case 'JUNIOR': return '#108ee9'; // Blue
-            case 'MIDDLE': return '#722ed1'; // Purple
-            case 'SENIOR': return '#eb2f96'; // Magenta
-            case 'LEAD': return '#f50';      // Orange/Red
-            case 'MANAGER': return '#fa8c16'; // Sunset Orange
+            case 'INTERN': return '#87d068';
+            case 'FRESHER': return '#2db7f5';
+            case 'JUNIOR': return '#108ee9';
+            case 'MIDDLE': return '#722ed1';
+            case 'SENIOR': return '#eb2f96';
+            case 'LEAD': return '#f50';
+            case 'MANAGER': return '#fa8c16';
             default: return 'default';
         }
     }
@@ -129,7 +175,7 @@ const JobPage = () => {
                             <Tag 
                                 color={getColorLevel(item)} 
                                 key={i} 
-                                className={styles['level-tag']} // Áp dụng class bo tròn
+                                className={styles['level-tag']}
                             >
                                 {item}
                             </Tag>
@@ -143,19 +189,18 @@ const JobPage = () => {
             dataIndex: 'active',
             render(dom, entity, index, action, schema) {
                 return (
-                    <Tag 
-                        bordered={false} 
-                        color={entity.active ? "success" : "error"}
-                        style={{ fontWeight: 500 }}
-                    >
-                        {entity.active ? "ACTIVE" : "INACTIVE"}
-                    </Tag>
+                    <>
+                        {entity.active ? 
+                            <Tag color="success" icon={<CheckCircleOutlined />}>Đã duyệt</Tag> : 
+                            <Tag color="error" icon={<CloseCircleOutlined />}>Chờ duyệt</Tag>
+                        }
+                    </>
                 )
             },
             hideInSearch: true,
         },
         {
-            title: 'Ngày tạo', // Đổi tên cho thân thiện
+            title: 'Ngày tạo',
             dataIndex: 'createdAt',
             width: 150,
             sorter: true,
@@ -165,12 +210,33 @@ const JobPage = () => {
             hideInSearch: true,
         },
         {
-            title: 'Thao tác', // Đổi tên cho thân thiện
+            title: 'Thao tác',
             hideInSearch: true,
-            width: 100,
+            width: 150,
             align: 'center',
             render: (_value, entity, _index, _action) => (
-                <Space size="middle">
+                <Space size="small">
+                    {entity.active === false && isSuperAdmin && (
+                        <Access permission={ALL_PERMISSIONS.JOBS.UPDATE} hideChildren>
+                            <Popconfirm
+                                title="Duyệt bài đăng này?"
+                                description="Bài đăng sẽ được hiển thị công khai cho ứng viên."
+                                onConfirm={() => handleApproveJob(entity)}
+                                okText="Duyệt ngay"
+                                cancelText="Hủy"
+                            >
+                                <Tooltip title="Duyệt bài đăng">
+                                    <Button 
+                                        type="primary" 
+                                        size="small" 
+                                        icon={<CheckCircleOutlined />}
+                                        style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
+                                    />
+                                </Tooltip>
+                            </Popconfirm>
+                        </Access>
+                    )}
+                    
                     <Access permission={ALL_PERMISSIONS.JOBS.UPDATE} hideChildren>
                         <Tooltip title="Chỉnh sửa">
                             <EditOutlined
@@ -186,7 +252,7 @@ const JobPage = () => {
                             placement="leftTop"
                             title={"Xác nhận xóa"}
                             description={"Bạn có chắc chắn muốn xóa job này ?"}
-                            onConfirm={() => handleDeleteJob(entity.id)}
+                            onConfirm={() => handleDeleteJob(entity.id as string)}
                             okText="Xóa"
                             cancelText="Hủy"
                             okButtonProps={{ danger: true }}
@@ -204,7 +270,6 @@ const JobPage = () => {
         },
     ];
 
-    // ... (Hàm buildQuery giữ nguyên) ...
     const buildQuery = (params: any, sort: any, filter: any) => {
         const clone = { ...params };
         let parts = [];
@@ -249,30 +314,50 @@ const JobPage = () => {
     }
 
     return (
-        <div className={styles['page-container']}> {/* Áp dụng class container mới */}
+        <div className={styles['page-container']}>
+            
+            {/* 4. HIỂN THỊ ALERT THÔNG BÁO */}
+            {isSuperAdmin && pendingJobCount > 0 && (
+                <div style={{ marginBottom: 20 }}>
+                    <Alert
+                        message="Cần duyệt bài đăng"
+                        description={
+                            <span>
+                                Hiện đang có <b>{pendingJobCount} tin tuyển dụng</b> mới đang chờ duyệt. 
+                                Vui lòng kiểm tra và kích hoạt để hiển thị lên trang chủ.
+                            </span>
+                        }
+                        type="warning"
+                        showIcon
+                        closable
+                    />
+                </div>
+            )}
+            {/* ------------------------------------- */}
+
             <Access permission={ALL_PERMISSIONS.JOBS.GET_PAGINATE}>
                 <DataTable<IJob>
                     actionRef={tableRef}
                     headerTitle={<span style={{ fontWeight: 'bold', fontSize: '18px', color: '#333' }}>Quản lý Công Việc</span>}
                     rowKey="id"
                     columns={columns}
-                    
-                    // Cấu hình search đẹp hơn
                     search={{
                         labelWidth: 'auto',
                         searchText: 'Tìm kiếm',
                         resetText: 'Làm mới',
-                        // filterType: 'light', // Nếu muốn search nằm ngang trên cùng thì bỏ comment dòng này
                     }}
-
                     request={async (params, sort, filter): Promise<any> => {
                         const query = buildQuery(params, sort, filter);
                         const action = await dispatch(fetchJob({ query }));
                         if (fetchJob.fulfilled.match(action)) {
+                            const res: any = action.payload;
+                            const listData = res.data?.result ?? res.result ?? [];
+                            const total = res.data?.meta?.total ?? res.meta?.total ?? 0;
+
                             return {
-                                data: action.payload.data?.result,
+                                data: listData,
                                 success: true,
-                                total: action.payload.data?.meta.total
+                                total: total
                             }
                         }
                         return { data: [], success: false };

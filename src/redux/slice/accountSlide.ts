@@ -19,6 +19,9 @@ interface IState {
         id: string;
         email: string;
         name: string;
+        age?:  string;
+        gender?: string;
+        address?: string;
         role: {
             id?: string;
             name?: string;
@@ -30,6 +33,10 @@ interface IState {
                 module: string;
             }[]
         }
+        company?: {
+            id?: string;
+            name?: string;
+        };
     };
     activeMenu: string;
 }
@@ -48,6 +55,7 @@ const initialState: IState = {
             name: "",
             permissions: [],
         },
+        
     },
 
     activeMenu: 'home'
@@ -73,6 +81,12 @@ export const accountSlide = createSlice({
 
             if (!action?.payload?.user?.role) state.user.role = {};
             state.user.role.permissions = action?.payload?.role?.permissions ?? [];
+        },
+     doUpdateUserInfoAction: (state, action) => {
+            state.user.name = action.payload.name;
+            state.user.age = action.payload.age;
+            state.user.gender = action.payload.gender;
+            state.user.address = action.payload.address;
         },
         setLogoutAction: (state, action) => {
             localStorage.removeItem('access_token');
@@ -128,7 +142,7 @@ export const accountSlide = createSlice({
 });
 
 export const {
-    setActiveMenu, setUserLoginInfo, setLogoutAction, setRefreshTokenAction
+    setActiveMenu, setUserLoginInfo, setLogoutAction, setRefreshTokenAction,doUpdateUserInfoAction
 } = accountSlide.actions;
 
 export default accountSlide.reducer;
