@@ -36,9 +36,7 @@ public class Skill {
     private List<Job> jobs;
 
     //subscriber
-    @ManyToMany(fetch = FetchType.LAZY, mappedBy = "skills")
-    @JsonIgnore
-    private List<Subscriber> subscribers;
+
 
 
     @PrePersist

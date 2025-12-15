@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -12,9 +11,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional; // Import Transactional
 import vn.manh.findJob.domain.Company;
 import vn.manh.findJob.domain.User;
+import vn.manh.findJob.dto.ResCompanyDTO;
 import vn.manh.findJob.dto.ResultPaginationDTO;
 import vn.manh.findJob.exception.ResourceNotFoundException;
 import vn.manh.findJob.repository.CompanyRepository;
+import vn.manh.findJob.repository.SubscriberRepository;
 import vn.manh.findJob.repository.UserRepository;
 
 import java.util.List;
@@ -28,6 +29,7 @@ public class CompanyService {
 
     private final CompanyRepository companyRepository;
     private final UserRepository userRepository;
+    private final SubscriberRepository subscriberRepository;
 
     // --- HÀM HỖ TRỢ (QUAN TRỌNG) ---
     // Tạo bản sao sạch sẽ (POJO) để đưa vào Redis
@@ -80,16 +82,27 @@ public class CompanyService {
         return rs;
     }
 
-    // 2. Cacheable: Lấy từ DB -> Sanitize -> Lưu Redis
-    @Cacheable(value = "companies", key = "#id")
-    public Company getCompanyById(long id) {
-        log.info("get company by id ={} ", id);
 
+    public ResCompanyDTO getCompanyById(long id) {
+        log.info("get company by id ={} ", id);
         // Gọi hàm tìm kiếm nội bộ
         Company dbCompany = this.findCompanyByIdInternal(id);
-
-        // Trả về object sạch
-        return this.sanitizeCompany(dbCompany);
+// 1. Convert Entity -> DTO
+        ResCompanyDTO dto = new ResCompanyDTO();
+        dto.setId(dbCompany.getId());
+        dto.setName(dbCompany.getName());
+        dto.setDescription(dbCompany.getDescription());
+        dto.setAddress(dbCompany.getAddress());
+        dto.setLogo(dbCompany.getLogo());
+        dto.setCreatedAt(dbCompany.getCreatedAt());
+        dto.setUpdatedAt(dbCompany.getUpdatedAt());
+        // 2. Tính toán isFollowed
+        String email = SecurityUtil.getCurrentUserLogin().orElse("");
+        if (!email.equals("") && !email.equals("anonymousUser")) {
+            boolean isFollowed = subscriberRepository.existsByEmailAndCompanies_Id(email,id);
+            dto.setFollowed(isFollowed);
+        }
+        return dto;
     }
 
     // 3. CacheEvict: Xóa Company -> Xóa Cache

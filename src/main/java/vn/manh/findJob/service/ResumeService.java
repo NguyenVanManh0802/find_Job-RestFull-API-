@@ -12,6 +12,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import vn.manh.findJob.domain.Company;
 import vn.manh.findJob.domain.Job;
 import vn.manh.findJob.domain.Resume;
 import vn.manh.findJob.domain.User;
@@ -20,6 +21,8 @@ import vn.manh.findJob.dto.Resume.ResResumeDTO;
 import vn.manh.findJob.exception.ResourceNotFoundException;
 import vn.manh.findJob.mapper.ResumeMapper;
 import vn.manh.findJob.repository.ResumeRepository;
+import vn.manh.findJob.repository.UserRepository;
+import vn.manh.findJob.util.constant.ResumeStateEnum;
 
 
 import java.util.List;
@@ -33,7 +36,8 @@ public class ResumeService {
     private final UserService userService;
     private final JobService jobService;
     private final ResumeMapper resumeMapper;
-
+    private final UserRepository userRepository; // Inject thêm cái này
+    private final EmailService emailService;
     @Autowired
     private FilterParser filterParser;
 
@@ -85,20 +89,77 @@ public class ResumeService {
         resume.setJob(job);
 
         Resume savedResume = resumeRepository.save(resume);
+
+        // 6. --- GỬI EMAIL (PHẦN MỚI) ---
+
+        // A. Gửi cho Ứng viên (Gửi vào email đang đăng nhập)
+        if (currentUser != null) {
+            this.emailService.sendEmailToCandidateAfterApply(
+                    currentUser.getEmail(), // Email người đang login
+                    job.getName(),
+                    currentUser.getName()
+            );
+        }
+
+
+        // B. Gửi cho HR (Lấy từ Job -> Company -> List<User>)
+        Company company = job.getCompany();
+        if (company != null) {
+            // Lấy tất cả nhân viên thuộc công ty này
+            List<User> companyUsers = this.userRepository.findByCompany(company);
+
+            // Link xem hồ sơ (để HR click vào)
+            String resumeLink = "http://localhost:3000/admin/resume";
+
+            if(companyUsers!=null)
+            {
+                for (User staff : companyUsers){
+                    // (Optional) Kiểm tra kỹ: Chỉ gửi cho tài khoản có quyền HR
+                    // Nếu công ty có nhân viên khác không phải HR, ta không nên spam họ
+                    // Giả sử tên role HR trong DB là "HUMAN_RESOURCE"
+                    if (staff.getRole() != null && "HUMAN_RESOURCE".equals(staff.getRole().getName())) {
+
+                        this.emailService.sendEmailToHRAfterApply(
+                                staff.getEmail(),   // Email của HR
+                                job.getName(),
+                                currentUser.getName(),
+                                resumeLink
+                        );
+                    }
+                }
+            }
+
+        }
         ResResumeDTO resResumeDTO = resumeMapper.toResumeDTO(savedResume);
         resResumeDTO.setCompanyName(job.getCompany().getName());
-
         return resResumeDTO;
     }
-
-
 
     // update a resume
     public ResResumeDTO updateResume(Resume resume,long id)
     {
+
         Resume resume1=this.findResumeById(id);
+        boolean isStatusChanged = resume1.getStatus() != resume.getStatus();
         resume1.setStatus(resume.getStatus());
-        ResResumeDTO resResumeDTO = resumeMapper.toResumeDTO(resumeRepository.save(resume1));
+        Resume currentResume=resumeRepository.save(resume1);
+        ResResumeDTO resResumeDTO = resumeMapper.toResumeDTO(currentResume);
+        // 4. GỬI MAIL THÔNG BÁO (Nếu status thay đổi)
+        if (isStatusChanged) {
+            String candidateEmail = currentResume.getUser().getEmail();
+            String candidateName = currentResume.getUser().getName();
+            String jobName = currentResume.getJob().getName();
+
+            // Trường hợp 1: APPROVED -> Gửi mail mời phỏng vấn
+            if (currentResume.getStatus() == ResumeStateEnum.APPROVED) {
+                this.emailService.sendEmailInterview(candidateEmail, candidateName, jobName);
+            }
+
+            // Trường hợp 2: REJECTED -> Gửi mail cảm ơn
+            else if (currentResume.getStatus() == ResumeStateEnum.REJECTED) {
+                this.emailService.sendEmailReject(candidateEmail, candidateName, jobName);
+            }
+        }
         return resResumeDTO;
     }
 

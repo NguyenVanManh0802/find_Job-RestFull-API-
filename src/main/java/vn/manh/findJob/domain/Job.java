@@ -35,7 +35,8 @@ public class Job {
     private String description;
     private Instant startDate;
     private Instant endDate;
-    private boolean active;
+    @Builder.Default
+    private boolean active=false;
     private Instant createdAt;
     private Instant updatedAt;
     private String createdBy;

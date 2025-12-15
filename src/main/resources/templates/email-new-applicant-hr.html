@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Ứng viên mới</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f0f2f5; margin: 0; padding: 0; }
+        .container { max-width: 600px; margin: 40px auto; background: #fff; border-radius: 8px; overflow: hidden; border-top: 5px solid #fa8c16; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .content { padding: 30px; color: #333; }
+        .highlight { font-weight: bold; color: #1677ff; }
+        .info-table { width: 100%; border-collapse: collapse; margin: 20px 0; background: #fff7e6; border-radius: 6px; overflow: hidden; }
+        .info-table td { padding: 12px 15px; border-bottom: 1px solid #ffd591; }
+        .info-table tr:last-child td { border-bottom: none; }
+        .btn { display: block; width: fit-content; margin: 0 auto; background: #1677ff; color: #fff; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; }
+        .footer { padding: 20px; text-align: center; font-size: 12px; color: #888; background: #fafafa; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="content">
+        <h2 style="color: #fa8c16; margin-top: 0;">🚀 Có Ứng viên mới!</h2>
+        <p>Xin chào Nhà tuyển dụng,</p>
+        <p>Bạn vừa nhận được một hồ sơ ứng tuyển mới trên hệ thống FindJob.</p>
+
+        <table class="info-table">
+            <tr>
+                <td style="color: #d46b08; font-weight: bold; width: 30%;">Vị trí:</td>
+                <td th:text="${jobName}">Java Developer</td>
+            </tr>
+            <tr>
+                <td style="color: #d46b08; font-weight: bold;">Ứng viên:</td>
+                <td th:text="${candidateName}">Nguyen Van A</td>
+            </tr>
+            <tr>
+                <td style="color: #d46b08; font-weight: bold;">Thời gian:</td>
+                <td th:text="${#execInfo.now.time}">12/12/2025</td>
+            </tr>
+        </table>
+
+        <p>Vui lòng đăng nhập vào trang quản trị để xem chi tiết CV và xử lý hồ sơ.</p>
+
+        <br>
+        <a th:href="${resumeLink}" class="btn">Xem hồ sơ ngay</a>
+    </div>
+    <div class="footer">
+        Email thông báo tự động từ hệ thống FindJob.
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Thông báo kết quả tuyển dụng</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; padding: 0; }
+        .container { max-width: 600px; margin: 40px auto; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .header { background: #f5f5f5; padding: 20px 30px; border-bottom: 1px solid #eee; }
+        .logo { font-weight: bold; color: #555; text-decoration: none; font-size: 18px; }
+        .content { padding: 40px 30px; color: #444; line-height: 1.7; }
+        .footer { padding: 20px; text-align: center; font-size: 12px; color: #999; border-top: 1px solid #eee; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <span class="logo">FindJob</span>
+    </div>
+    <div class="content">
+        <p>Thân gửi <b th:text="${candidateName}">Ứng viên</b>,</p>
+
+        <p>Cảm ơn bạn đã dành thời gian quan tâm và tham gia ứng tuyển cho vị trí <b th:text="${jobName}" style="color: #333;">Vị trí</b> tại công ty chúng tôi.</p>
+
+        <p>Chúng tôi đánh giá cao kinh nghiệm và kỹ năng của bạn. Tuy nhiên, sau khi cân nhắc kỹ lưỡng các hồ sơ, chúng tôi rất tiếc phải thông báo rằng hồ sơ của bạn chưa phù hợp với các tiêu chí ưu tiên của chúng tôi trong đợt tuyển dụng này.</p>
+
+        <p>Hồ sơ của bạn đã được lưu vào Ngân hàng dữ liệu ứng viên. Chúng tôi sẽ chủ động liên hệ lại với bạn nếu có vị trí phù hợp hơn trong tương lai.</p>
+
+        <p>Chúng tôi chân thành cảm ơn sự quan tâm của bạn và chúc bạn sớm tìm được công việc như ý cũng như gặt hái nhiều thành công trên con đường sự nghiệp.</p>
+
+        <br>
+        <p>Trân trọng,</p>
+        <p><b>Bộ phận Tuyển dụng</b></p>
+    </div>
+    <div class="footer">
+        © 2025 FindJob. All rights reserved.
+    </div>
+</div>
+</body>
+</html>

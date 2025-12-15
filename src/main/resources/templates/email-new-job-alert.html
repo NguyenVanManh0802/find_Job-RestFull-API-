@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Thông báo việc làm mới</title>
+    <style>
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f4f7f6; margin: 0; padding: 0; }
+        .container { max-width: 600px; margin: 40px auto; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .header { background: #ff4d4f; padding: 30px; text-align: center; color: #fff; }
+        .content { padding: 30px; color: #333; line-height: 1.6; }
+        .job-card { border: 1px solid #eee; padding: 15px; border-radius: 8px; background: #fafafa; margin: 20px 0; }
+        .btn { display: inline-block; background: #ff4d4f; color: #fff; padding: 12px 25px; text-decoration: none; border-radius: 4px; font-weight: bold; margin-top: 10px; }
+        .highlight { color: #ff4d4f; font-weight: bold; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h2 style="margin:0;">🔔 Có việc làm mới!</h2>
+    </div>
+    <div class="content">
+        <p>Xin chào <b th:text="${userName}">Ứng viên</b>,</p>
+        <p>Công ty <b th:text="${companyName}" class="highlight">Google</b> mà bạn đang theo dõi vừa đăng tuyển một vị trí mới:</p>
+
+        <div class="job-card">
+            <h3 style="margin-top: 0; color: #333;" th:text="${jobName}">Senior Java Developer</h3>
+            <p style="margin: 5px 0; color: #666;">💰 Mức lương: <b th:text="${salary}">2,000 $</b></p>
+            <p style="margin: 5px 0; color: #666;">🏢 Công ty: <span th:text="${companyName}">Google</span></p>
+        </div>
+
+        <p>Hãy nhanh tay ứng tuyển để không bỏ lỡ cơ hội tuyệt vời này nhé!</p>
+
+        <div style="text-align: center;">
+            <a th:href="${jobLink}" class="btn">Xem chi tiết & Ứng tuyển</a>
+        </div>
+
+        <p style="margin-top: 30px; font-size: 12px; color: #999; text-align: center;">
+            Bạn nhận được email này vì đã theo dõi <span th:text="${companyName}"></span> trên hệ thống FindJob.
+        </p>
+    </div>
+</div>
+</body>
+</html>

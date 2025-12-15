@@ -44,6 +44,9 @@ public class Company {
     List<Job> jobs;
 
 
+    @ManyToMany(fetch = FetchType.LAZY, mappedBy = "companies")
+    @JsonIgnore
+    private List<Subscriber> subscribers;
     //chạy phuương này trươ khi lưu mơi một entity
     @PrePersist
     public void handleBeforeSave()

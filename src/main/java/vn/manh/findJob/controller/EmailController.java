@@ -17,8 +17,8 @@ public class EmailController {
     private final EmailService emailService;
     private final SubscriberService subscriberSer;
     // API để test gửi email
-    @GetMapping()
-    public ResponseEntity<String> sendTestEmail(@RequestParam String email) {
+    //@GetMapping()
+    //public ResponseEntity<String> sendTestEmail(@RequestParam String email) {
          //Gửi email text đơn giản
 //         emailService.sendSimpleEmail(
 //             email,
@@ -38,8 +38,8 @@ public class EmailController {
 //
 //        );
 
-        this.subscriberSer.sendSubscribersEmailJobs();
-        return ResponseEntity.ok("Email đã được gửi đi (bất đồng bộ)!");
-    }
+//        this.subscriberSer.sendSubscribersEmailJobs();
+//        return ResponseEntity.ok("Email đã được gửi đi (bất đồng bộ)!");
+   //}
 
 }

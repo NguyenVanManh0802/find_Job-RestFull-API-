@@ -19,4 +19,5 @@ public interface UserRepository extends JpaRepository<User,Long>, JpaSpecificati
     List<User> findByCompany(Company company);
     //laays user theo email vaf token de kiem tra user co thatj toon tai ko
     User findByRefreshTokenAndEmail(String token,String email);
+
 }

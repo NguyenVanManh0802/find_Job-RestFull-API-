@@ -44,8 +44,6 @@ public class SkillService {
         // Khi Cache thông tin Skill (ví dụ: JAVA), ta không cần lưu kèm danh sách 1000 Jobs đang tuyển Java
         // Để null giúp Cache cực nhẹ và tránh lỗi Lazy/Vòng lặp
         cleanSkill.setJobs(null);
-        cleanSkill.setSubscribers(null);
-
         return cleanSkill;
     }
 
@@ -122,9 +120,7 @@ public class SkillService {
         if(currentSkill.getJobs() != null) {
             currentSkill.getJobs().forEach(job -> job.getSkills().remove(currentSkill));
         }
-        if(currentSkill.getSubscribers() != null) {
-            currentSkill.getSubscribers().forEach(subs -> subs.getSkills().remove(currentSkill));
-        }
+
 
         skillRepository.delete(currentSkill);
         log.info("Deleted skill and evicted from cache with id: {}", id);

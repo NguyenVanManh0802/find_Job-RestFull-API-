@@ -13,6 +13,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import vn.manh.findJob.domain.Company;
+import vn.manh.findJob.dto.ResCompanyDTO;
 import vn.manh.findJob.dto.ResponseData;
 import vn.manh.findJob.dto.ResultPaginationDTO;
 import vn.manh.findJob.service.CompanyService;
@@ -61,16 +62,13 @@ public class CompanyController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ResponseData<Company>>getCompanyById(@PathVariable  long id)
-    {
-        log.info("get company with id = {}",id);
-        Company company = companyService.getCompanyById(id);
-        ResponseData<Company>responseData=new ResponseData<>(
-            HttpStatus.OK.value(),
-            "get company by Id successful",
-            company
-        );
-        return ResponseEntity.ok(responseData);
+    public ResponseEntity<ResponseData<ResCompanyDTO>> getCompanyById(@PathVariable("id") long id) {
+        ResCompanyDTO resDto = this.companyService.getCompanyById(id);
+        return ResponseEntity.ok(new ResponseData<>(
+                HttpStatus.OK.value(),
+                "Get company by id successful",
+                resDto
+        ));
     }
     @DeleteMapping("/{id}")
     public ResponseEntity<ResponseData<Void>> deleteCompanyById( @PathVariable  long id)

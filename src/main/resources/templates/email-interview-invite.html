@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thư mời phỏng vấn</title>
+    <style>
+        /* CSS Reset & Base Styles */
+        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f4f7f6; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
+        .container { width: 100%; max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-top: 40px; margin-bottom: 40px; }
+
+        /* Header */
+        .header { background: linear-gradient(135deg, #1677ff 0%, #0050b3 100%); padding: 30px; text-align: center; }
+        .logo { font-size: 24px; font-weight: bold; color: #ffffff; text-transform: uppercase; letter-spacing: 2px; text-decoration: none; }
+
+        /* Content */
+        .content { padding: 40px 30px; color: #333333; line-height: 1.6; }
+        .greeting { font-size: 20px; font-weight: bold; margin-bottom: 20px; color: #1f1f1f; }
+        .job-highlight { color: #1677ff; font-weight: 700; }
+
+        /* Card Note */
+        .note-card { background-color: #e6f7ff; border-left: 4px solid #1677ff; padding: 15px; margin: 25px 0; border-radius: 4px; font-size: 14px; color: #0050b3; }
+
+        /* Footer */
+        .footer { background-color: #f9f9f9; padding: 20px; text-align: center; font-size: 12px; color: #888888; border-top: 1px solid #eeeeee; }
+        .footer a { color: #1677ff; text-decoration: none; }
+
+        /* Button Style (Nếu cần nút bấm) */
+        .btn { display: inline-block; background-color: #1677ff; color: #ffffff; padding: 12px 25px; text-decoration: none; border-radius: 6px; font-weight: bold; margin-top: 20px; }
+        .btn:hover { background-color: #4096ff; }
+
+        /* Responsive */
+        @media only screen and (max-width: 600px) {
+            .container { width: 100% !important; border-radius: 0; margin-top: 0; }
+            .content { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <a href="#" class="logo">FindJob</a>
+    </div>
+
+    <div class="content">
+        <div class="greeting">Chúc mừng <span th:text="${candidateName}">Ứng viên</span>!</div>
+
+        <p>Cảm ơn bạn đã quan tâm đến vị trí <span class="job-highlight" th:text="${jobName}">Java Developer</span> tại hệ thống của chúng tôi.</p>
+
+        <p>Chúng tôi rất ấn tượng với hồ sơ năng lực của bạn. Đội ngũ tuyển dụng trân trọng mời bạn tham gia buổi phỏng vấn để trao đổi chi tiết hơn về cơ hội hợp tác này.</p>
+
+        <div class="note-card">
+            <strong>Lưu ý quan trọng:</strong><br>
+            Bộ phận HR sẽ sớm liên hệ trực tiếp với bạn qua số điện thoại hoặc email đã đăng ký để chốt thời gian và địa điểm phỏng vấn cụ thể.
+        </div>
+
+        <p>Vui lòng giữ liên lạc và kiểm tra điện thoại thường xuyên nhé.</p>
+        <p>Chúc bạn có một buổi phỏng vấn thành công!</p>
+
+        <br>
+        <p style="margin-bottom: 0;">Trân trọng,</p>
+        <strong style="color: #1677ff;">Đội ngũ Tuyển dụng FindJob</strong>
+    </div>
+
+    <div class="footer">
+        <p>© 2025 FindJob Recruitment Platform. All rights reserved.</p>
+        <p>Bạn nhận được email này vì bạn đã ứng tuyển tại FindJob. <a href="#">Hủy đăng ký</a></p>
+    </div>
+</div>
+</body>
+</html>

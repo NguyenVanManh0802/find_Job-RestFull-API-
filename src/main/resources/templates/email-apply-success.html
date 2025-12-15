@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Ứng tuyển thành công</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f7f6; margin: 0; padding: 0; }
+        .container { max-width: 600px; margin: 40px auto; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .header { background: #52c41a; padding: 25px; text-align: center; color: #fff; font-size: 22px; font-weight: bold; }
+        .content { padding: 30px; color: #333; line-height: 1.6; }
+        .job-card { background: #f6ffed; border: 1px solid #b7eb8f; padding: 15px; border-radius: 6px; margin: 20px 0; color: #389e0d; }
+        .footer { background: #fafafa; padding: 20px; text-align: center; font-size: 12px; color: #999; border-top: 1px solid #eee; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">✓ Ứng tuyển thành công</div>
+    <div class="content">
+        <p>Xin chào <b th:text="${userName}">Ứng viên</b>,</p>
+        <p>Hệ thống FindJob xác nhận bạn đã gửi hồ sơ thành công cho vị trí:</p>
+
+        <div class="job-card">
+            <strong style="font-size: 16px;" th:text="${jobName}">Java Backend Developer</strong>
+        </div>
+
+        <p>Hồ sơ của bạn đã được chuyển trực tiếp đến Nhà tuyển dụng. Họ sẽ xem xét năng lực và kinh nghiệm của bạn.</p>
+        <p>Nếu hồ sơ phù hợp, Nhà tuyển dụng sẽ chủ động liên hệ với bạn trong thời gian sớm nhất.</p>
+        <br>
+        <p>Chúc bạn một ngày tốt lành!</p>
+        <p style="color: #1677ff; font-weight: bold;">FindJob Team</p>
+    </div>
+    <div class="footer">
+        © 2025 FindJob. Kết nối sự nghiệp.
+    </div>
+</div>
+</body>
+</html>

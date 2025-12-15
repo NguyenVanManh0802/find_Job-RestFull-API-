@@ -15,18 +15,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional; // Import Transactional
-import vn.manh.findJob.domain.Company;
-import vn.manh.findJob.domain.Job;
-import vn.manh.findJob.domain.Skill;
-import vn.manh.findJob.domain.User;
+import vn.manh.findJob.domain.*;
 import vn.manh.findJob.dto.JobDTO;
 import vn.manh.findJob.dto.ResponseData;
 import vn.manh.findJob.dto.ResultPaginationDTO;
 import vn.manh.findJob.exception.ResourceNotFoundException;
 import vn.manh.findJob.mapper.JobMapper;
-import vn.manh.findJob.repository.CompanyRepository;
-import vn.manh.findJob.repository.JobRepository;
-import vn.manh.findJob.repository.SkillRepository;
+import vn.manh.findJob.repository.*;
 
 import java.util.List;
 import java.util.Optional;
@@ -42,6 +37,9 @@ public class JobService {
     private final SkillRepository skillRepository;
     private final JobMapper jobMapper;
     private final CompanyRepository companyRepository;
+    private final UserRepository userRepository;
+    private final SubscriberRepository subscriberRepository;
+    private final EmailService emailService;
 
     // Hàm private hỗ trợ tìm kiếm (Luôn gọi DB)
     public Job findJobById(long id) {
@@ -53,28 +51,39 @@ public class JobService {
     }
 
     public JobDTO saveJob(Job job) {
-        // BƯỚC 1: KIỂM TRA VÀ LẤY CÁC SKILL TỪ DATABASE
+        // 1. Lấy thông tin người đang đăng nhập
+        String email = SecurityUtil.getCurrentUserLogin().orElse("");
+        User currentUser = this.userRepository.findByEmail(email);
+
+        if (currentUser != null) {
+            // --- LOGIC TỰ GÁN COMPANY ---
+            // Nếu người dùng thuộc 1 công ty (HR) -> Ép buộc Job thuộc công ty đó
+            if (currentUser.getCompany() != null) {
+                job.setCompany(currentUser.getCompany());
+                System.out.println(">>>>>>>>>> " + job.getCompany().getId());
+            }
+            // Nếu người dùng không thuộc công ty (Admin) -> Giữ nguyên logic chọn company từ FE gửi lên
+            else if (job.getCompany() != null) {
+                Optional<Company> companyOptional = companyRepository.findById(job.getCompany().getId());
+                companyOptional.ifPresent(job::setCompany);
+            }
+        }
+
+        // 2. Xử lý Skill
         if (job.getSkills() != null) {
             List<Long> skillIds = job.getSkills()
                     .stream()
                     .map(Skill::getId)
                     .collect(Collectors.toList());
-            List<Skill> dbSkills = this.skillRepository.findByIdIn(skillIds);
-            job.setSkills(dbSkills);
+            job.setSkills(this.skillRepository.findByIdIn(skillIds));
         }
 
-        // check có company không
-        if(job.getCompany() != null) {
-            Optional<Company> companyOptional = companyRepository.findById(job.getCompany().getId());
-            if(companyOptional.isPresent()) {
-                job.setCompany(companyOptional.get());
-            }
-        }
+        // 3. --- CHẶN ACTIVE ---
+        // Bất kể FE gửi lên active là true hay false, khi tạo mới luôn ép về FALSE
+        job.setActive(false);
+        // ---------------------
 
         Job newJob = jobRepository.save(job);
-        log.info("Job đã được lưu thành công, jobName = {} ", newJob.getName());
-
-        // Convert sang DTO để trả về
         return this.jobMapper.toJobDTO(newJob);
     }
 
@@ -119,7 +128,7 @@ public class JobService {
     @CachePut(value = "jobs", key = "#id")
     public JobDTO updateJobById(long id, Job job) {
         // Lấy Job cũ từ DB (đã kèm Skill, Company nhờ hàm findByIdWithDetails)
-        Job jobExisted = this.findJobById(id);
+        Job jobInDB = this.findJobById(id);
 
         if(job.getSkills() != null) {
             List<Long> skillIds = job.getSkills()
@@ -127,32 +136,58 @@ public class JobService {
                     .map(Skill::getId)
                     .collect(Collectors.toList());
             List<Skill> dbSkills = this.skillRepository.findByIdIn(skillIds);
-            jobExisted.setSkills(dbSkills);
+            jobInDB.setSkills(dbSkills);
         }
 
         if(job.getCompany() != null) {
             Optional<Company> companyOptional = companyRepository.findById(job.getCompany().getId());
             if(companyOptional.isPresent()) {
-                jobExisted.setCompany(companyOptional.get());
+                jobInDB.setCompany(companyOptional.get());
             }
         }
 
         log.info("update job by new job");
-        jobExisted.setName(job.getName());
-        jobExisted.setActive(job.isActive());
-        jobExisted.setLevel(job.getLevel());
-        jobExisted.setLocation(job.getLocation());
-        jobExisted.setQuantity(job.getQuantity());
-        jobExisted.setSalary(job.getSalary());
-        jobExisted.setDescription(job.getDescription());
-        // Company và Skills đã set ở trên
+        jobInDB.setName(job.getName());
+        jobInDB.setActive(job.isActive());
+        jobInDB.setLevel(job.getLevel());
+        jobInDB.setLocation(job.getLocation());
+        jobInDB.setQuantity(job.getQuantity());
+        jobInDB.setSalary(job.getSalary());
+        jobInDB.setDescription(job.getDescription());
 
+// --- BỔ SUNG QUAN TRỌNG: CHECK QUYỀN DUYỆT BÀI ---
+        String email = SecurityUtil.getCurrentUserLogin().orElse("");
+        User currentUser = this.userRepository.findByEmail(email);
+
+        if (currentUser != null) {
+            // Nếu là Admin -> Cho phép đổi Company (nếu cần) và Đổi trạng thái Active
+            if ("SUPER_ADMIN".equals(currentUser.getRole().getName())) {
+                if (job.getCompany() != null) {
+                    Optional<Company> companyOptional = companyRepository.findById(job.getCompany().getId());
+                    companyOptional.ifPresent(jobInDB::setCompany);
+                }
+                // Admin được quyền duyệt bài
+                jobInDB.setActive(job.isActive());
+            }
+            // Nếu là HR -> KHÔNG được đổi Company (giữ cũ) và KHÔNG được đổi Active
+            else {
+                // Giữ nguyên company cũ của Job
+                jobInDB.setCompany(jobInDB.getCompany());
+
+                // Giữ nguyên trạng thái active cũ (hoặc reset về false để duyệt lại)
+                jobInDB.setActive(jobInDB.isActive());
+            }
+        }
         // Lưu vào DB
-        Job savedJob = jobRepository.save(jobExisted);
+        Job savedJob = jobRepository.save(jobInDB);
+
 
         log.info("job save successful");
-
-        // Convert sang DTO để Redis lưu
+        // 3.---LOGIC GỬI EMAIL TỰ ĐỘNG---
+        // Chỉ gửi khi: Trạng thái Cũ là FALSE (Chưa duyệt) VÀ Trạng thái Mới là TRUE (Đã duyệt)
+        if (savedJob.isActive()) {
+            this.sendEmailToSubscribers(savedJob);
+        }
         return jobMapper.toJobDTO(savedJob);
     }
 
@@ -166,5 +201,27 @@ public class JobService {
 
         jobRepository.delete(job);
         log.info("delete job successful");
+    }
+    // Viết hàm riêng cho gọn code
+    private void sendEmailToSubscribers(Job job) {
+        Company company = job.getCompany();
+        if (company != null) {
+            // Lấy danh sách người theo dõi công ty này
+            List<Subscriber> subscribers = this.subscriberRepository.findByCompanies(company);
+
+            // Link job chi tiết (Frontend)
+            String jobLink = "http://localhost:3000/job/" + job.getId();
+
+            for (Subscriber sub : subscribers) {
+                this.emailService.sendEmailNewJobAlert(
+                        sub.getEmail(),
+                        sub.getName(),
+                        job.getName(),
+                        company.getName(),
+                        jobLink,
+                        job.getSalary()
+                );
+            }
+        }
     }
 }

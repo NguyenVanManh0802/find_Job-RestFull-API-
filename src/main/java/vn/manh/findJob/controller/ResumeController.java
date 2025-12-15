@@ -132,9 +132,10 @@ public class ResumeController {
                 }
 
                 // Tạo Filter: Chỉ lấy Resume thuộc Job của công ty này
-                Specification<Resume> jobInSpec = filterSpecificationConverter.convert(
-                        filterBuilder.field("job").in(filterBuilder.input(arrJobIds)).get()
-                );
+                List<Long> finalArrJobIds = arrJobIds; // Biến dùng trong lambda phải final
+                Specification<Resume> jobInSpec = (root, query, criteriaBuilder) -> {
+                    return root.get("job").get("id").in(finalArrJobIds);
+                };
 
                 // Kết hợp với filter từ FE (nếu có)
                 Specification<Resume> finalSpec = jobInSpec;
